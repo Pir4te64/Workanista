@@ -7,6 +7,7 @@ import {
   updatePrice,
   type Proposal,
 } from "@/lib/api";
+import Loader from "./Loader";
 
 const RESULT_OPTIONS = [
   { value: "won", label: "Ganada", color: "bg-brand-orange" },
@@ -22,6 +23,13 @@ export default function ProposalHistory() {
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [priceValue, setPriceValue] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [filterResult, setFilterResult] = useState<string>("all");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
   const fetchProposals = async () => {
     try {
@@ -73,8 +81,8 @@ export default function ProposalHistory() {
 
   if (loading) {
     return (
-      <div className="text-center text-text-secondary py-12">
-        Cargando historial...
+      <div className="py-12">
+        <Loader size={40} text="Cargando historial..." />
       </div>
     );
   }
@@ -91,9 +99,168 @@ export default function ProposalHistory() {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parseAnalysis = (p: Proposal): Record<string, any> => {
+    try { return JSON.parse(p.analysis); } catch { return {}; }
+  };
+
+  const filteredProposals = proposals.filter((p) => {
+    const a = parseAnalysis(p);
+    const response = p.responses?.[0];
+
+    // Text search: client_text, technologies, project_type, complexity
+    if (searchText) {
+      const q = searchText.toLowerCase();
+      const techs = Array.isArray(a.technologies) ? a.technologies.join(" ") : String(a.technologies || "");
+      const searchable = [
+        p.client_text,
+        String(a.project_type || ""),
+        String(a.complexity || ""),
+        techs,
+        String(a.suggested_architecture || ""),
+      ].join(" ").toLowerCase();
+      if (!searchable.includes(q)) return false;
+    }
+
+    // Result filter
+    if (filterResult !== "all") {
+      const currentResult = response?.result || "no_response";
+      if (currentResult !== filterResult) return false;
+    }
+
+    // Price range
+    const price = response?.price_charged;
+    if (priceMin && (!price || price < parseFloat(priceMin))) return false;
+    if (priceMax && (!price || price > parseFloat(priceMax))) return false;
+
+    // Date range
+    const created = new Date(p.created_at);
+    if (dateFrom && created < new Date(dateFrom)) return false;
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      if (created > to) return false;
+    }
+
+    return true;
+  });
+
+  const hasActiveFilters = searchText || filterResult !== "all" || priceMin || priceMax || dateFrom || dateTo;
+
+  const clearFilters = () => {
+    setSearchText("");
+    setFilterResult("all");
+    setPriceMin("");
+    setPriceMax("");
+    setDateFrom("");
+    setDateTo("");
+  };
+
   return (
     <div className="space-y-4">
-      {proposals.map((proposal) => {
+      {/* Search & Filters */}
+      <div className="bg-surface-card rounded-xl border border-surface-border p-4 space-y-3">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Buscar por tecnología, tipo de proyecto, texto..."
+              className="w-full pl-10 pr-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary placeholder:text-text-muted focus:border-brand-orange focus:outline-none"
+            />
+          </div>
+          <select
+            value={filterResult}
+            onChange={(e) => setFilterResult(e.target.value)}
+            className="px-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-orange focus:outline-none"
+          >
+            <option value="all">Todos</option>
+            <option value="won">Ganadas</option>
+            <option value="lost">Perdidas</option>
+            <option value="no_response">Sin respuesta</option>
+          </select>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-3 py-2 text-sm border rounded-lg transition-colors ${
+              showFilters || (priceMin || priceMax || dateFrom || dateTo)
+                ? "bg-brand-orange/15 border-brand-orange text-brand-orange"
+                : "bg-surface-dark border-surface-border text-text-muted hover:text-text-primary"
+            }`}
+          >
+            Filtros
+          </button>
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="px-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-red-400 hover:bg-red-600/10 transition-colors"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+
+        {/* Extended filters */}
+        {showFilters && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2 border-t border-surface-border">
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Precio mín</label>
+              <input
+                type="number"
+                value={priceMin}
+                onChange={(e) => setPriceMin(e.target.value)}
+                placeholder="$0"
+                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-orange focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Precio máx</label>
+              <input
+                type="number"
+                value={priceMax}
+                onChange={(e) => setPriceMax(e.target.value)}
+                placeholder="$∞"
+                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-orange focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Desde</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-orange focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Hasta</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-orange focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Results count */}
+        <div className="text-xs text-text-muted">
+          {filteredProposals.length} de {proposals.length} propuestas
+          {hasActiveFilters && " (filtrado)"}
+        </div>
+      </div>
+
+      {filteredProposals.length === 0 && hasActiveFilters && (
+        <div className="text-center text-text-muted py-8">
+          No se encontraron propuestas con esos filtros.
+        </div>
+      )}
+
+      {filteredProposals.map((proposal) => {
         const response = proposal.responses?.[0];
         const currentResult = response?.result || "no_response";
         const priceCharged = response?.price_charged;

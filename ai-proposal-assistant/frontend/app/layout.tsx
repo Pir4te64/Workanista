@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "AI Proposal Assistant",
-  description: "Asistente inteligente para responder propuestas de Workana",
+  title: "ColdDuck",
+  description: "Asistente inteligente para responder propuestas y outreach",
 };
 
 export default function RootLayout({
@@ -12,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body className="bg-surface-black text-text-primary min-h-screen">
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${roboto.className} bg-surface-black text-text-primary min-h-screen`} suppressHydrationWarning>
         {children}
       </body>
     </html>

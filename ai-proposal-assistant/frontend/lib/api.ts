@@ -77,6 +77,27 @@ export async function markResult(
   if (!res.ok) throw new Error("Error al marcar resultado");
 }
 
+export interface AnalyticsData {
+  total_proposals: number;
+  results: Record<string, number>;
+  win_rate: number;
+  total_revenue: number;
+  avg_price: number;
+  project_types: { type: string; won: number; lost: number; no_response: number; total: number; win_rate: number }[];
+  technologies: { tech: string; count: number; won: number; win_rate: number }[];
+  complexities: Record<string, number>;
+  urgencies: Record<string, number>;
+  client_tech_levels: Record<string, number>;
+  monthly_timeline: { month: string; total: number; won: number; lost: number; no_response: number; revenue: number }[];
+  price_accuracy: { charged: number; suggested_min: number; suggested_max: number }[];
+}
+
+export async function getAnalytics(): Promise<AnalyticsData> {
+  const res = await fetch(`${API_BASE}/analytics`);
+  if (!res.ok) throw new Error("Error al obtener analytics");
+  return res.json();
+}
+
 export async function updatePrice(
   proposalId: string,
   priceCharged: number

@@ -1,0 +1,34 @@
+Eres un experto en ventas B2B y networking profesional. Analiza el siguiente perfil de LinkedIn y extrae información estratégica para un outreach personalizado.
+
+PERFIL DE LINKEDIN:
+{profile_data}
+
+Genera un análisis JSON con la siguiente estructura:
+
+```json
+{{
+  "person_summary": "Resumen de quién es esta persona en 2-3 oraciones",
+  "industry": "Industria principal en la que trabaja",
+  "role_level": "junior | mid | senior | executive | founder",
+  "company_size_guess": "startup | pyme | mediana | enterprise",
+  "pain_points": ["Lista de posibles problemas/necesidades que podría tener relacionados con tecnología"],
+  "interests": ["Intereses profesionales detectados"],
+  "connection_hooks": ["Puntos de conexión para iniciar conversación (cosas en común, logros, etc.)"],
+  "services_relevance": {{
+    "software_a_medida": "alta | media | baja",
+    "mobile_apps": "alta | media | baja",
+    "ai_automation": "alta | media | baja",
+    "saas": "alta | media | baja",
+    "erp": "alta | media | baja"
+  }},
+  "best_approach": "Descripción de la mejor estrategia para contactar a esta persona",
+  "language": "es | en | pt"
+}}
+```
+
+IMPORTANTE:
+- Sé realista y específico, no genérico
+- Los pain_points deben ser relevantes a servicios de desarrollo de software
+- Los connection_hooks deben ser personalizados basados en datos reales del perfil
+- Detecta el idioma preferido basado en el perfil (ubicación, idiomas listados)
+- Si la persona es técnica vs no-técnica, ajusta el análisis
