@@ -4,8 +4,13 @@ services:
     container_name: proposal-backend
     ports:
       - "8000:8000"
-    env_file:
-      - ./ai-proposal-assistant/backend/.env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - MODEL_NAME=${MODEL_NAME:-gpt-4o}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-small}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
     restart: unless-stopped
 
   frontend:
