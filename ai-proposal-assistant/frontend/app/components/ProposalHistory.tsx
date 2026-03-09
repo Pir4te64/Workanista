@@ -98,7 +98,8 @@ export default function ProposalHistory() {
         const currentResult = response?.result || "no_response";
         const priceCharged = response?.price_charged;
         const isExpanded = expandedId === proposal.id;
-        let analysis: Record<string, unknown> = {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let analysis: Record<string, any> = {};
         try {
           analysis = JSON.parse(proposal.analysis);
         } catch {
