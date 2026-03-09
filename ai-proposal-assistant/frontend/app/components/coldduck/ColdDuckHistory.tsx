@@ -320,7 +320,7 @@ export default function ColdDuckHistory() {
                   </h4>
 
                   {loadingMessages === item.id ? (
-                    <Loader size={24} text="Cargando mensajes..." />
+                    <Loader size={24} text="Cargando mensajes..." fullscreen={false} />
                   ) : (
                     <div className="space-y-2 mb-3">
                       {/* Initial outreach message */}

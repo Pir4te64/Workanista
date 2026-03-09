@@ -238,7 +238,7 @@ export default function ColdDuckTab() {
 
                     {item.status === "processing" && (
                       <div className="mt-3 ml-5">
-                        <Loader size={20} text="Analizando perfil y generando mensaje..." />
+                        <Loader size={20} text="Analizando perfil y generando mensaje..." fullscreen={false} />
                         <p className="text-xs text-text-muted mt-1">Esto puede tomar 10-30 segundos</p>
                       </div>
                     )}
