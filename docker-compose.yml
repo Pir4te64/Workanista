@@ -1,0 +1,21 @@
+services:
+  backend:
+    build: ./ai-proposal-assistant/backend
+    container_name: proposal-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./ai-proposal-assistant/backend/.env
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./ai-proposal-assistant/frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    container_name: proposal-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
