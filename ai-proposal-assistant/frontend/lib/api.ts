@@ -161,3 +161,39 @@ export async function deleteBudget(budgetId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/budgets/${budgetId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Error al eliminar presupuesto");
 }
+
+export interface BudgetAnalytics {
+  kpis: {
+    total_budgets: number;
+    avg_hourly_rate: number;
+    min_hourly_rate: number;
+    max_hourly_rate: number;
+    avg_total: number;
+    total_billed: number;
+    currencies: Record<string, number>;
+  };
+  budget_summary: {
+    project: string;
+    client: string;
+    currency: string;
+    rates: number[];
+    avg_rate: number;
+    total: number;
+  }[];
+  ai_analysis: {
+    market_position: string;
+    market_range_min: number;
+    market_range_max: number;
+    score: number;
+    summary: string;
+    suggestions: string[];
+    risks: string[];
+    opportunities: string[];
+  } | null;
+}
+
+export async function getBudgetAnalytics(): Promise<BudgetAnalytics> {
+  const res = await fetch(`${API_BASE}/budgets/analytics`);
+  if (!res.ok) throw new Error("Error al obtener analytics de presupuestos");
+  return res.json();
+}

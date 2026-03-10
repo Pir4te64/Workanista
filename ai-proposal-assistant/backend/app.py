@@ -549,6 +549,141 @@ async def list_budgets():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/budgets/analytics")
+async def budget_analytics():
+    """Compute pricing KPIs from all saved budgets + AI market suggestions."""
+    from openai import AsyncOpenAI
+    from config import OPENAI_API_KEY, MODEL_NAME
+    import json as _json
+    import re
+
+    try:
+        result = db.client.table("budgets").select("data").execute()
+        budgets = result.data or []
+
+        if not budgets:
+            return {
+                "kpis": {
+                    "total_budgets": 0,
+                    "avg_hourly_rate": 0,
+                    "min_hourly_rate": 0,
+                    "max_hourly_rate": 0,
+                    "avg_total": 0,
+                    "total_billed": 0,
+                    "currencies": {},
+                },
+                "budget_summary": [],
+                "ai_analysis": None,
+            }
+
+        # Extract pricing data from all budgets
+        rates: list[float] = []
+        totals: list[float] = []
+        budget_summaries = []
+        currencies: dict[str, int] = {}
+
+        def parse_number(s: str) -> float:
+            """Extract numeric value from strings like '$17.00/hr', '$2,720.00 USD', etc."""
+            if not s:
+                return 0.0
+            cleaned = re.sub(r"[^\d.,]", "", s.replace(",", ""))
+            try:
+                return float(cleaned) if cleaned else 0.0
+            except ValueError:
+                return 0.0
+
+        for b in budgets:
+            data = b.get("data", {})
+            currency = data.get("currency", "USD")
+            currencies[currency] = currencies.get(currency, 0) + 1
+
+            budget_rates = []
+            budget_total = parse_number(data.get("totalValue", ""))
+
+            for item in data.get("budgetItems", []):
+                rate_val = parse_number(item.get("rate", ""))
+                subtotal_val = parse_number(item.get("subtotal", ""))
+                if rate_val > 0:
+                    rates.append(rate_val)
+                    budget_rates.append(rate_val)
+                if subtotal_val > 0:
+                    totals.append(subtotal_val)
+
+            if budget_total > 0:
+                totals_sum = budget_total
+            else:
+                totals_sum = sum(parse_number(item.get("subtotal", "")) for item in data.get("budgetItems", []))
+
+            budget_summaries.append({
+                "project": data.get("projectName", "Sin nombre"),
+                "client": data.get("clientName", ""),
+                "currency": currency,
+                "rates": budget_rates,
+                "avg_rate": round(sum(budget_rates) / len(budget_rates), 2) if budget_rates else 0,
+                "total": round(totals_sum, 2),
+            })
+
+        kpis = {
+            "total_budgets": len(budgets),
+            "avg_hourly_rate": round(sum(rates) / len(rates), 2) if rates else 0,
+            "min_hourly_rate": round(min(rates), 2) if rates else 0,
+            "max_hourly_rate": round(max(rates), 2) if rates else 0,
+            "avg_total": round(sum(totals) / len(totals), 2) if totals else 0,
+            "total_billed": round(sum(t["total"] for t in budget_summaries), 2),
+            "currencies": currencies,
+        }
+
+        # AI analysis - market comparison
+        summary_text = _json.dumps(budget_summaries, ensure_ascii=False, indent=2)
+
+        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+        ai_response = await client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": """Sos un consultor de pricing para empresas de desarrollo de software en LATAM.
+
+Analiza los presupuestos que te paso y responde en JSON con esta estructura exacta:
+{
+  "market_position": "bajo|competitivo|alto" (comparando con el mercado LATAM de desarrollo de software),
+  "market_range_min": numero (tarifa hora minima del mercado LATAM en USD para este tipo de servicios),
+  "market_range_max": numero (tarifa hora maxima del mercado LATAM en USD),
+  "score": numero del 1 al 10 (que tan bien estan posicionados los precios),
+  "summary": "Resumen corto de 2-3 oraciones sobre el posicionamiento",
+  "suggestions": ["sugerencia 1", "sugerencia 2", "sugerencia 3"],
+  "risks": ["riesgo 1 si los precios son bajos", "riesgo 2"],
+  "opportunities": ["oportunidad 1", "oportunidad 2"]
+}
+
+Contexto del mercado LATAM 2024-2025:
+- Desarrolladores junior LATAM: $8-15/hr
+- Desarrolladores mid LATAM: $15-30/hr
+- Desarrolladores senior LATAM: $30-60/hr
+- Tech leads / arquitectos LATAM: $50-100/hr
+- Agencias boutique LATAM: $20-50/hr
+- Empresas US que tercerizan a LATAM: $35-80/hr
+
+Compara con estos rangos y da recomendaciones concretas y accionables.
+Responde UNICAMENTE con JSON valido."""},
+                {"role": "user", "content": f"Analiza estos {len(budget_summaries)} presupuestos de CruzNegraDev LLC:\n\n{summary_text}"},
+            ],
+            temperature=0.3,
+            response_format={"type": "json_object"},
+        )
+
+        ai_content = ai_response.choices[0].message.content or "{}"
+        ai_analysis = _json.loads(ai_content)
+
+        return {
+            "kpis": kpis,
+            "budget_summary": budget_summaries,
+            "ai_analysis": ai_analysis,
+        }
+
+    except Exception as e:
+        logger.error(f"Budget analytics error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/budgets/{budget_id}")
 async def get_budget(budget_id: str):
     """Get a single budget with full data."""

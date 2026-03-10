@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "./Toast";
-import { saveBudget, listBudgets, getBudget, deleteBudget } from "@/lib/api";
-import type { BudgetSummary } from "@/lib/api";
+import { saveBudget, listBudgets, getBudget, deleteBudget, getBudgetAnalytics } from "@/lib/api";
+import type { BudgetSummary, BudgetAnalytics } from "@/lib/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -647,6 +647,23 @@ export default function BudgetTab() {
     }
   }, []);
 
+  // ─── Analytics ───
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<BudgetAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const data = await getBudgetAnalytics();
+      setAnalyticsData(data);
+    } catch {
+      addToast("error", "Error al obtener analytics");
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchBudgets();
   }, [fetchBudgets]);
@@ -850,7 +867,23 @@ export default function BudgetTab() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => { setShowSaved(!showSaved); setShowAiPanel(false); }}
+            onClick={() => {
+              const next = !showAnalytics;
+              setShowAnalytics(next);
+              setShowSaved(false);
+              setShowAiPanel(false);
+              if (next && !analyticsData) fetchAnalytics();
+            }}
+            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
+              showAnalytics
+                ? "bg-amber-500/20 text-amber-400"
+                : "bg-amber-500/10 text-amber-400/70 hover:bg-amber-500/20 hover:text-amber-400"
+            }`}
+          >
+            Pricing IA
+          </button>
+          <button
+            onClick={() => { setShowSaved(!showSaved); setShowAiPanel(false); setShowAnalytics(false); }}
             className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
               showSaved
                 ? "bg-white/10 text-text-primary"
@@ -860,7 +893,7 @@ export default function BudgetTab() {
             Historial {savedBudgets.length > 0 && `(${savedBudgets.length})`}
           </button>
           <button
-            onClick={() => { setShowAiPanel(!showAiPanel); setShowSaved(false); }}
+            onClick={() => { setShowAiPanel(!showAiPanel); setShowSaved(false); setShowAnalytics(false); }}
             className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
               showAiPanel
                 ? "bg-brand-mint text-text-dark"
@@ -924,6 +957,171 @@ export default function BudgetTab() {
           )}
           {loadingBudget && (
             <p className="text-xs text-text-muted mt-3 text-center">Cargando...</p>
+          )}
+        </div>
+      )}
+
+      {/* ─── Pricing Analytics Panel ─── */}
+      {showAnalytics && (
+        <div className="glass-card p-6" style={{ borderColor: "rgba(245,158,11,0.2)" }}>
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
+              Pricing Intelligence
+            </p>
+            <button
+              onClick={fetchAnalytics}
+              disabled={analyticsLoading}
+              className="px-3 py-1.5 text-xs font-semibold bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {analyticsLoading ? "Analizando..." : "Actualizar"}
+            </button>
+          </div>
+
+          {analyticsLoading && !analyticsData && (
+            <div className="py-8 text-center">
+              <p className="text-sm text-text-muted">Analizando presupuestos con IA...</p>
+              <p className="text-xs text-text-muted mt-1">Comparando con mercado LATAM</p>
+            </div>
+          )}
+
+          {analyticsData && analyticsData.kpis.total_budgets === 0 && (
+            <p className="text-sm text-text-muted py-4 text-center">
+              Necesitas al menos un presupuesto en el historial para ver analytics
+            </p>
+          )}
+
+          {analyticsData && analyticsData.kpis.total_budgets > 0 && (
+            <div className="space-y-5">
+              {/* KPIs Grid */}
+              <div className="grid grid-cols-4 gap-3">
+                <div className="bg-white/[0.03] rounded-lg p-3">
+                  <p className="text-[10px] text-text-muted uppercase tracking-wider">Presupuestos</p>
+                  <p className="text-xl font-bold text-text-primary mt-1">{analyticsData.kpis.total_budgets}</p>
+                </div>
+                <div className="bg-white/[0.03] rounded-lg p-3">
+                  <p className="text-[10px] text-text-muted uppercase tracking-wider">Tarifa promedio/hr</p>
+                  <p className="text-xl font-bold text-text-primary mt-1">${analyticsData.kpis.avg_hourly_rate}</p>
+                  <p className="text-[10px] text-text-muted">${analyticsData.kpis.min_hourly_rate} - ${analyticsData.kpis.max_hourly_rate}</p>
+                </div>
+                <div className="bg-white/[0.03] rounded-lg p-3">
+                  <p className="text-[10px] text-text-muted uppercase tracking-wider">Promedio proyecto</p>
+                  <p className="text-xl font-bold text-text-primary mt-1">${analyticsData.kpis.avg_total.toLocaleString()}</p>
+                </div>
+                <div className="bg-white/[0.03] rounded-lg p-3">
+                  <p className="text-[10px] text-text-muted uppercase tracking-wider">Total facturado</p>
+                  <p className="text-xl font-bold text-brand-mint mt-1">${analyticsData.kpis.total_billed.toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* AI Analysis */}
+              {analyticsData.ai_analysis && (
+                <>
+                  {/* Market Position */}
+                  <div className="bg-white/[0.03] rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Posicion en mercado LATAM</p>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-1 text-xs font-bold rounded-md ${
+                          analyticsData.ai_analysis.market_position === "bajo"
+                            ? "bg-red-500/15 text-red-400"
+                            : analyticsData.ai_analysis.market_position === "competitivo"
+                            ? "bg-green-500/15 text-green-400"
+                            : "bg-amber-500/15 text-amber-400"
+                        }`}>
+                          {analyticsData.ai_analysis.market_position.toUpperCase()}
+                        </span>
+                        <span className="text-lg font-bold text-text-primary">
+                          {analyticsData.ai_analysis.score}/10
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Rate comparison bar */}
+                    <div className="mb-3">
+                      <div className="flex justify-between text-[10px] text-text-muted mb-1">
+                        <span>Mercado LATAM: ${analyticsData.ai_analysis.market_range_min} - ${analyticsData.ai_analysis.market_range_max}/hr</span>
+                        <span>Tu promedio: ${analyticsData.kpis.avg_hourly_rate}/hr</span>
+                      </div>
+                      <div className="h-2 bg-white/5 rounded-full overflow-hidden relative">
+                        {/* Market range */}
+                        <div
+                          className="absolute h-full bg-white/10 rounded-full"
+                          style={{
+                            left: `${(analyticsData.ai_analysis.market_range_min / 100) * 100}%`,
+                            width: `${((analyticsData.ai_analysis.market_range_max - analyticsData.ai_analysis.market_range_min) / 100) * 100}%`,
+                          }}
+                        />
+                        {/* Your rate */}
+                        <div
+                          className="absolute h-full w-1.5 bg-brand-mint rounded-full"
+                          style={{ left: `${Math.min((analyticsData.kpis.avg_hourly_rate / 100) * 100, 98)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-text-secondary leading-relaxed">{analyticsData.ai_analysis.summary}</p>
+                  </div>
+
+                  {/* Suggestions + Risks + Opportunities */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-white/[0.03] rounded-lg p-4">
+                      <p className="text-[10px] font-semibold text-green-400 uppercase tracking-wider mb-2">Sugerencias</p>
+                      <ul className="space-y-2">
+                        {analyticsData.ai_analysis.suggestions.map((s, i) => (
+                          <li key={i} className="text-xs text-text-secondary leading-relaxed flex gap-2">
+                            <span className="text-green-400 shrink-0">+</span>
+                            {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="bg-white/[0.03] rounded-lg p-4">
+                      <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wider mb-2">Riesgos</p>
+                      <ul className="space-y-2">
+                        {analyticsData.ai_analysis.risks.map((r, i) => (
+                          <li key={i} className="text-xs text-text-secondary leading-relaxed flex gap-2">
+                            <span className="text-red-400 shrink-0">!</span>
+                            {r}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="bg-white/[0.03] rounded-lg p-4">
+                      <p className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-2">Oportunidades</p>
+                      <ul className="space-y-2">
+                        {analyticsData.ai_analysis.opportunities.map((o, i) => (
+                          <li key={i} className="text-xs text-text-secondary leading-relaxed flex gap-2">
+                            <span className="text-amber-400 shrink-0">*</span>
+                            {o}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Per-budget breakdown */}
+                  {analyticsData.budget_summary.length > 1 && (
+                    <div className="bg-white/[0.03] rounded-lg p-4">
+                      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-3">Desglose por proyecto</p>
+                      <div className="space-y-2">
+                        {analyticsData.budget_summary.map((b, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs py-1.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                            <div className="min-w-0 flex-1">
+                              <span className="text-text-primary font-medium">{b.project}</span>
+                              {b.client && <span className="text-text-muted ml-2">· {b.client}</span>}
+                            </div>
+                            <div className="flex items-center gap-4 shrink-0">
+                              <span className="text-text-muted">${b.avg_rate}/hr</span>
+                              <span className="text-text-primary font-semibold">${b.total.toLocaleString()} {b.currency}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
       )}
