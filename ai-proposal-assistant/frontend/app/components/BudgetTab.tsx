@@ -113,7 +113,7 @@ async function loadLogoBase64(): Promise<string | null> {
 
 // ─── PDF Generation ──────────────────────────────────────────────────────────
 
-async function generateProposalPDF(data: ProposalData, addToast: (type: string, msg: string) => void) {
+async function generateProposalPDF(data: ProposalData, addToast: (type: "success" | "error" | "info", msg: string) => void) {
   const jsPDF = (await import("jspdf")).default;
   const autoTableModule = await import("jspdf-autotable");
   const autoTable = autoTableModule.default;
@@ -405,7 +405,8 @@ async function generateProposalPDF(data: ProposalData, addToast: (type: string, 
         2: { cellWidth: colW[2], halign: "center" },
         3: { cellWidth: colW[3], halign: "center" },
       },
-      didParseCell: (hookData: { section: string; row: { index: number }; column: { index: number }; cell: { styles: { textColor: number[]; fontStyle: string } } }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      didParseCell: (hookData: any) => {
         const lastRowIdx = tableBody.length - 1;
         if (hookData.section === "body" && hookData.column.index === 3) {
           const val = tableBody[hookData.row.index]?.[3] || "";
