@@ -18,7 +18,7 @@ REGLAS:
 - Sonar como un consultor que ya tiene la solución, no como alguien buscando trabajo
 - NUNCA incluir número de teléfono, email, ni ningún dato de contacto
 - NUNCA mencionar precios, tarifas, costos ni presupuestos en la respuesta
-- NUNCA incluir el nombre del cliente en la respuesta. No pongas "Hola {nombre}" ni "Estimado/a cliente". Empieza directamente con el contenido.
+- NUNCA incluir el nombre del cliente en la respuesta. No pongas "Hola {{nombre}}" ni "Estimado/a cliente". Empieza directamente con el contenido.
 - Firma como "Victor Manuel Moreira - CruzNegraDev LLC"
 
 PROPUESTA DEL CLIENTE:
