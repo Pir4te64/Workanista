@@ -59,7 +59,7 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
   return (
     <div className="bg-surface-card rounded-xl p-6 border border-surface-border">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-14 h-14 bg-brand-orange/15 rounded-lg flex items-center justify-center text-text-primary">
+        <div className="w-14 h-14 bg-brand-mint/15 rounded-lg flex items-center justify-center text-text-primary">
           <DuckIcon size={44} />
         </div>
         <div>
@@ -76,7 +76,7 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
           onClick={() => setMode("url")}
           className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
             mode === "url"
-              ? "bg-brand-orange text-white"
+              ? "bg-brand-mint text-text-dark"
               : "text-text-muted hover:text-text-secondary"
           }`}
         >
@@ -86,7 +86,7 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
           onClick={() => setMode("manual")}
           className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
             mode === "manual"
-              ? "bg-brand-orange text-white"
+              ? "bg-brand-mint text-text-dark"
               : "text-text-muted hover:text-text-secondary"
           }`}
         >
@@ -106,7 +106,7 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="https://www.linkedin.com/in/nombre-persona"
-              className="w-full bg-surface-dark border border-surface-border rounded-lg px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange"
+              className="w-full bg-surface-dark border border-surface-border rounded-lg px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-mint/50 focus:border-brand-mint"
               disabled={processing}
             />
             {url && !isValidUrl(url) && (
@@ -126,7 +126,7 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
               onKeyDown={handleKeyDown}
               placeholder={"Copia y pega la informacion del perfil de LinkedIn aqui:\nnombre, titulo, experiencia, habilidades, etc."}
               rows={6}
-              className="w-full bg-surface-dark border border-surface-border rounded-lg px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange resize-y"
+              className="w-full bg-surface-dark border border-surface-border rounded-lg px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-mint/50 focus:border-brand-mint resize-y"
               disabled={processing}
             />
             <p className="text-xs text-text-muted mt-1">
@@ -151,7 +151,7 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
               <select
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
-                className="w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-brand-orange"
+                className="w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-brand-mint"
               >
                 <option value="profesional y cercano">
                   Profesional y cercano
@@ -172,7 +172,7 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
                 type="text"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                className="w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-brand-orange"
+                className="w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-brand-mint"
               />
             </div>
 
@@ -182,7 +182,7 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
                   type="checkbox"
                   checked={generateVideo}
                   onChange={(e) => setGenerateVideo(e.target.checked)}
-                  className="w-4 h-4 accent-brand-orange"
+                  className="w-4 h-4 accent-brand-mint"
                 />
                 <span className="text-sm text-text-secondary">
                   Generar video con avatar (HeyGen)
@@ -200,7 +200,7 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
         <button
           onClick={handleSubmit}
           disabled={!canSubmit || processing}
-          className="px-5 py-2 bg-brand-orange hover:bg-brand-orange-light disabled:bg-surface-border disabled:text-text-muted text-white font-medium rounded-lg transition-colors"
+          className="px-5 py-2 bg-brand-mint hover:bg-brand-mint-dark disabled:bg-surface-border disabled:text-text-muted text-text-dark font-medium rounded-lg transition-colors"
         >
           {processing ? "Procesando..." : "Generar Outreach"}
         </button>

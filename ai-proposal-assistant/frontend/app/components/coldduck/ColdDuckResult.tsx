@@ -62,7 +62,7 @@ function VideoSection({ video, outreachId }: { video: VideoData; outreachId: str
         <div className="space-y-2">
           <div className="w-full bg-surface-border rounded-full h-2 overflow-hidden">
             <div
-              className="h-full bg-brand-orange rounded-full transition-all duration-1000 ease-out"
+              className="h-full bg-brand-mint rounded-full transition-all duration-1000 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -87,7 +87,7 @@ function VideoSection({ video, outreachId }: { video: VideoData; outreachId: str
             href={videoState.video_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block px-3 py-1 text-xs bg-brand-orange hover:bg-brand-orange-light text-white rounded-lg transition-colors"
+            className="inline-block px-3 py-1 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
           >
             Descargar video
           </a>
@@ -122,7 +122,7 @@ export default function ColdDuckResult({ result, onClose }: Props) {
   };
 
   return (
-    <div className="bg-surface-card rounded-xl border border-brand-orange/30">
+    <div className="bg-surface-card rounded-xl border border-brand-mint/30">
       <div className="p-5 border-b border-surface-border">
         <div className="flex items-start justify-between">
           <div>
@@ -162,7 +162,7 @@ export default function ColdDuckResult({ result, onClose }: Props) {
             onClick={() => setActiveTab(tab)}
             className={`px-3 py-2 text-xs font-medium rounded-t-lg transition-colors ${
               activeTab === tab
-                ? "bg-surface-dark text-text-primary border-b-2 border-brand-orange"
+                ? "bg-surface-dark text-text-primary border-b-2 border-brand-mint"
                 : "text-text-muted hover:text-text-primary"
             }`}
           >
@@ -180,7 +180,7 @@ export default function ColdDuckResult({ result, onClose }: Props) {
               </h4>
               <button
                 onClick={() => handleCopy(message, "message")}
-                className="px-3 py-1 text-xs bg-brand-orange hover:bg-brand-orange-light text-white rounded-lg transition-colors"
+                className="px-3 py-1 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
               >
                 {copiedField === "message" ? "Copiado!" : "Copiar mensaje"}
               </button>
@@ -230,7 +230,7 @@ export default function ColdDuckResult({ result, onClose }: Props) {
                 {analysis.connection_hooks?.map((h: string, i: number) => (
                   <span
                     key={i}
-                    className="px-2 py-1 text-xs bg-brand-orange/10 text-brand-orange rounded"
+                    className="px-2 py-1 text-xs bg-brand-mint/10 text-brand-mint rounded"
                   >
                     {h}
                   </span>

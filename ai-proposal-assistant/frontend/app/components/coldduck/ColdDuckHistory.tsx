@@ -17,7 +17,7 @@ import Loader from "../Loader";
 const RESULT_OPTIONS = [
   { value: "pending", label: "Pendiente", color: "bg-text-muted" },
   { value: "replied", label: "Respondio", color: "bg-green-600" },
-  { value: "connected", label: "Conectado", color: "bg-brand-orange" },
+  { value: "connected", label: "Conectado", color: "bg-brand-mint" },
   { value: "meeting", label: "Reunion", color: "bg-blue-600" },
   { value: "ignored", label: "Ignorado", color: "bg-red-600" },
 ] as const;
@@ -208,7 +208,7 @@ export default function ColdDuckHistory() {
               <div className="flex items-center justify-between">
                 <div className="flex gap-2 flex-wrap">
                   {item.analysis?.industry && (
-                    <span className="px-2 py-0.5 text-xs bg-brand-orange/10 text-brand-orange rounded">
+                    <span className="px-2 py-0.5 text-xs bg-brand-mint/10 text-brand-mint rounded">
                       {item.analysis.industry}
                     </span>
                   )}
@@ -232,7 +232,7 @@ export default function ColdDuckHistory() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleCopy(item.id, item.message)}
-                    className="px-3 py-1 text-xs bg-brand-orange hover:bg-brand-orange-light text-white rounded-lg transition-colors"
+                    className="px-3 py-1 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
                   >
                     {copiedId === item.id ? "Copiado!" : "Copiar"}
                   </button>
@@ -306,7 +306,7 @@ export default function ColdDuckHistory() {
                       href={item.linkedin_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-brand-orange hover:underline"
+                      className="text-xs text-brand-mint hover:underline"
                     >
                       Abrir perfil en LinkedIn →
                     </a>
@@ -325,8 +325,8 @@ export default function ColdDuckHistory() {
                     <div className="space-y-2 mb-3">
                       {/* Initial outreach message */}
                       <div className="flex justify-end">
-                        <div className="max-w-[80%] px-3 py-2 rounded-lg bg-brand-orange/15 text-text-primary text-sm">
-                          <div className="text-xs text-brand-orange mb-1 font-medium">
+                        <div className="max-w-[80%] px-3 py-2 rounded-lg bg-brand-mint/15 text-text-primary text-sm">
+                          <div className="text-xs text-brand-mint mb-1 font-medium">
                             Mensaje inicial
                           </div>
                           <p className="whitespace-pre-wrap leading-relaxed line-clamp-3">
@@ -396,7 +396,7 @@ export default function ColdDuckHistory() {
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Escribir mensaje de seguimiento..."
                         rows={2}
-                        className="w-full px-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary placeholder:text-text-muted focus:border-brand-orange focus:outline-none resize-none"
+                        className="w-full px-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary placeholder:text-text-muted focus:border-brand-mint focus:outline-none resize-none"
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                             handleAddMessage(item.id);
@@ -408,14 +408,14 @@ export default function ColdDuckHistory() {
                       <select
                         value={messageSender}
                         onChange={(e) => setMessageSender(e.target.value as "me" | "client")}
-                        className="px-2 py-1 text-xs bg-surface-dark border border-surface-border rounded text-text-primary focus:border-brand-orange focus:outline-none"
+                        className="px-2 py-1 text-xs bg-surface-dark border border-surface-border rounded text-text-primary focus:border-brand-mint focus:outline-none"
                       >
                         <option value="me">Yo</option>
                         <option value="client">Cliente</option>
                       </select>
                       <button
                         onClick={() => handleAddMessage(item.id)}
-                        className="px-3 py-1.5 text-xs bg-brand-orange hover:bg-brand-orange-light text-white rounded-lg transition-colors"
+                        className="px-3 py-1.5 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
                       >
                         Enviar
                       </button>

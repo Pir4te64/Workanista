@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import { checkDuplicate } from "@/lib/api";
+import { useToast } from "./Toast";
+import { FadeIn } from "./AnimatedList";
 
 interface Props {
   onAdd: (text: string) => void;
   queueCount: number;
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
-export default function ProposalInput({ onAdd, queueCount }: Props) {
+export default function ProposalInput({ onAdd, queueCount, inputRef }: Props) {
   const [text, setText] = useState("");
   const [duplicate, setDuplicate] = useState<{
     show: boolean;
@@ -16,6 +19,7 @@ export default function ProposalInput({ onAdd, queueCount }: Props) {
     originalText?: string;
   }>({ show: false });
   const [checking, setChecking] = useState(false);
+  const { addToast } = useToast();
 
   const handleAdd = async () => {
     if (!text.trim()) return;
@@ -29,6 +33,7 @@ export default function ProposalInput({ onAdd, queueCount }: Props) {
           similarity: result.similarity,
           originalText: result.original_text,
         });
+        addToast("info", "Propuesta duplicada detectada");
         setChecking(false);
         return;
       }
@@ -70,39 +75,42 @@ export default function ProposalInput({ onAdd, queueCount }: Props) {
         )}
       </div>
       <textarea
+        ref={inputRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Pega aqui la propuesta del cliente de Workana..."
         rows={6}
-        className="w-full bg-surface-dark border border-surface-border rounded-lg p-4 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange resize-y"
+        className="w-full bg-surface-dark border border-surface-border rounded-lg p-4 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-mint/50 focus:border-brand-mint resize-y"
       />
 
       {/* Duplicate warning popup */}
       {duplicate.show && (
-        <div className="mt-3 p-4 bg-brand-orange/10 border border-brand-orange/40 rounded-lg">
-          <p className="text-sm text-brand-orange font-medium mb-2">
-            Propuesta duplicada detectada (
-            {Math.round((duplicate.similarity || 0) * 100)}% similar)
-          </p>
-          <p className="text-xs text-text-secondary mb-3 line-clamp-2">
-            Original: {duplicate.originalText}...
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={handleForceAdd}
-              className="px-4 py-1.5 text-xs bg-brand-orange hover:bg-brand-orange-light text-white rounded-lg transition-colors"
-            >
-              Agregar de todas formas
-            </button>
-            <button
-              onClick={handleDismissDuplicate}
-              className="px-4 py-1.5 text-xs bg-surface-card-hover hover:bg-text-dark text-text-secondary rounded-lg transition-colors"
-            >
-              Cancelar
-            </button>
+        <FadeIn>
+          <div className="mt-3 p-4 bg-brand-mint/10 border border-brand-mint/40 rounded-lg">
+            <p className="text-sm text-brand-mint font-medium mb-2">
+              Propuesta duplicada detectada (
+              {Math.round((duplicate.similarity || 0) * 100)}% similar)
+            </p>
+            <p className="text-xs text-text-secondary mb-3 line-clamp-2">
+              Original: {duplicate.originalText}...
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleForceAdd}
+                className="px-4 py-1.5 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
+              >
+                Agregar de todas formas
+              </button>
+              <button
+                onClick={handleDismissDuplicate}
+                className="px-4 py-1.5 text-xs bg-surface-card-hover hover:bg-text-dark text-text-secondary rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
-        </div>
+        </FadeIn>
       )}
 
       <div className="flex items-center justify-between mt-3">
@@ -112,7 +120,7 @@ export default function ProposalInput({ onAdd, queueCount }: Props) {
         <button
           onClick={handleAdd}
           disabled={!text.trim() || checking}
-          className="px-5 py-2 bg-brand-orange hover:bg-brand-orange-light disabled:bg-surface-border disabled:text-text-muted text-white font-medium rounded-lg transition-colors"
+          className="px-5 py-2 bg-brand-mint hover:bg-brand-mint-dark disabled:bg-surface-border disabled:text-text-muted text-text-dark font-medium rounded-lg transition-colors"
         >
           {checking ? "Verificando..." : "Agregar a la cola"}
         </button>

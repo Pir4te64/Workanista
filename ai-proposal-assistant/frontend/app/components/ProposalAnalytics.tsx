@@ -3,18 +3,21 @@
 import { useEffect, useState } from "react";
 import { getAnalytics, type AnalyticsData } from "@/lib/api";
 import Loader from "./Loader";
+import Sparkline from "./Sparkline";
+import { FadeIn } from "./AnimatedList";
 
-function KpiCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+function KpiCard({ label, value, sub, sparkData }: { label: string; value: string | number; sub?: string; sparkData?: number[] }) {
   return (
-    <div className="bg-surface-card rounded-xl border border-surface-border p-4">
+    <div className="bg-surface-card rounded-xl border border-surface-border p-4 hover:border-brand-mint/30 transition-colors">
       <div className="text-xs text-text-muted mb-1">{label}</div>
-      <div className="text-2xl font-bold text-text-primary">{value}</div>
-      {sub && <div className="text-xs text-text-muted mt-1">{sub}</div>}
+      <div className="text-2xl font-bold text-brand-mint">{value}</div>
+      {sparkData && <Sparkline data={sparkData} />}
+      {sub && <div className="text-xs text-text-secondary mt-1">{sub}</div>}
     </div>
   );
 }
 
-function BarChart({ items, labelKey, valueKey, maxValue, colorClass = "bg-brand-orange" }: {
+function BarChart({ items, labelKey, valueKey, maxValue, colorClass = "bg-brand-mint" }: {
   items: Record<string, unknown>[];
   labelKey: string;
   valueKey: string;
@@ -51,7 +54,7 @@ function WinRateBar({ won, lost, noResponse }: { won: number; lost: number; noRe
   return (
     <div className="flex h-6 rounded-full overflow-hidden bg-surface-dark">
       {wonPct > 0 && (
-        <div className="bg-brand-orange flex items-center justify-center text-[10px] text-white font-medium" style={{ width: `${wonPct}%` }}>
+        <div className="bg-brand-mint flex items-center justify-center text-[10px] text-white font-medium" style={{ width: `${wonPct}%` }}>
           {won}
         </div>
       )}
@@ -79,7 +82,7 @@ function MonthlyChart({ timeline }: { timeline: AnalyticsData["monthly_timeline"
           <div className="w-16 text-xs text-text-muted">{m.month}</div>
           <div className="flex-1 flex h-5 rounded-full overflow-hidden bg-surface-dark">
             {m.won > 0 && (
-              <div className="bg-brand-orange" style={{ width: `${(m.won / maxTotal) * 100}%` }} />
+              <div className="bg-brand-mint" style={{ width: `${(m.won / maxTotal) * 100}%` }} />
             )}
             {m.lost > 0 && (
               <div className="bg-red-600" style={{ width: `${(m.lost / maxTotal) * 100}%` }} />
@@ -90,7 +93,7 @@ function MonthlyChart({ timeline }: { timeline: AnalyticsData["monthly_timeline"
           </div>
           <div className="w-8 text-xs text-text-muted text-right">{m.total}</div>
           {m.revenue > 0 && (
-            <div className="w-20 text-xs text-brand-orange text-right">${m.revenue.toLocaleString()}</div>
+            <div className="w-20 text-xs text-brand-mint text-right">${m.revenue.toLocaleString()}</div>
           )}
         </div>
       ))}
@@ -130,13 +133,28 @@ export default function ProposalAnalytics() {
     priceAccuracyPct = Math.round((withinRange / data.price_accuracy.length) * 100);
   }
 
+  const handleExportCsv = () => {
+    const header = "month,total,won,lost,no_response,revenue";
+    const rows = data.monthly_timeline.map(m => `${m.month},${m.total},${m.won},${m.lost},${m.no_response},${m.revenue}`);
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().split("T")[0];
+    a.href = url;
+    a.download = `analytics_${date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
+    <FadeIn>
     <div className="space-y-6">
       {/* Top KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard label="Total Propuestas" value={data.total_proposals} />
-        <KpiCard label="Win Rate" value={`${data.win_rate}%`} sub={`${won} ganadas de ${won + lost} decididas`} />
-        <KpiCard label="Ingresos Totales" value={`$${data.total_revenue.toLocaleString()}`} sub={data.avg_price > 0 ? `Promedio: $${data.avg_price.toLocaleString()}` : undefined} />
+        <KpiCard label="Total Propuestas" value={data.total_proposals} sparkData={data.monthly_timeline.map(m => m.total)} />
+        <KpiCard label="Win Rate" value={`${data.win_rate}%`} sub={`${won} ganadas de ${won + lost} decididas`} sparkData={data.monthly_timeline.map(m => m.won + m.lost > 0 ? Math.round(m.won / (m.won + m.lost) * 100) : 0)} />
+        <KpiCard label="Ingresos Totales" value={`$${data.total_revenue.toLocaleString()}`} sub={data.avg_price > 0 ? `Promedio: $${data.avg_price.toLocaleString()}` : undefined} sparkData={data.monthly_timeline.map(m => m.revenue)} />
         <KpiCard label="Precision de Precios" value={data.price_accuracy.length > 0 ? `${priceAccuracyPct}%` : "N/A"} sub={data.price_accuracy.length > 0 ? `${data.price_accuracy.length} con precio real` : "Agrega precios para medir"} />
       </div>
 
@@ -145,7 +163,7 @@ export default function ProposalAnalytics() {
         <h3 className="text-sm font-medium text-text-secondary mb-3">Resultados Generales</h3>
         <WinRateBar won={won} lost={lost} noResponse={noResponse} />
         <div className="flex gap-4 mt-2 text-xs text-text-muted">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-orange inline-block" /> Ganadas ({won})</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-mint inline-block" /> Ganadas ({won})</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-600 inline-block" /> Perdidas ({lost})</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-surface-card-hover inline-block" /> Sin respuesta ({noResponse})</span>
         </div>
@@ -167,7 +185,7 @@ export default function ProposalAnalytics() {
               {data.project_types.filter(t => t.won + t.lost > 0).map(t => (
                 <div key={t.type} className="flex justify-between text-xs">
                   <span className="text-text-muted">{t.type}</span>
-                  <span className={t.win_rate >= 50 ? "text-brand-orange" : "text-red-400"}>
+                  <span className={t.win_rate >= 50 ? "text-brand-mint" : "text-red-400"}>
                     {t.win_rate}% win rate ({t.won}W / {t.lost}L)
                   </span>
                 </div>
@@ -238,7 +256,7 @@ export default function ProposalAnalytics() {
         <h3 className="text-sm font-medium text-text-secondary mb-3">Tendencia Mensual</h3>
         <MonthlyChart timeline={data.monthly_timeline} />
         <div className="flex gap-4 mt-3 text-xs text-text-muted">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-orange inline-block" /> Ganadas</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-mint inline-block" /> Ganadas</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-600 inline-block" /> Perdidas</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-surface-card-hover inline-block" /> Sin respuesta</span>
         </div>
@@ -246,8 +264,8 @@ export default function ProposalAnalytics() {
 
       {/* Insight box */}
       {data.project_types.length > 0 && data.technologies.length > 0 && (
-        <div className="bg-brand-orange/10 border border-brand-orange/30 rounded-xl p-4">
-          <h3 className="text-sm font-medium text-brand-orange mb-2">Insight para Producto</h3>
+        <div className="bg-brand-mint/10 border border-brand-mint/30 rounded-xl p-4">
+          <h3 className="text-sm font-medium text-brand-mint mb-2">Insight para Producto</h3>
           <p className="text-xs text-text-secondary leading-relaxed">
             El tipo de proyecto mas demandado es <strong className="text-text-primary">{data.project_types[0]?.type}</strong> ({data.project_types[0]?.total} propuestas).
             {data.project_types[0]?.win_rate > 0 && ` Win rate: ${data.project_types[0].win_rate}%.`}
@@ -259,6 +277,17 @@ export default function ProposalAnalytics() {
           </p>
         </div>
       )}
+
+      {/* Export CSV */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleExportCsv}
+          className="px-4 py-2 text-sm bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
+        >
+          Exportar CSV
+        </button>
+      </div>
     </div>
+    </FadeIn>
   );
 }

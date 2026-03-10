@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
+import Providers from "./components/Providers";
 import "./globals.css";
 
 const roboto = Roboto({
@@ -20,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${roboto.className} bg-surface-black text-text-primary min-h-screen`} suppressHydrationWarning>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

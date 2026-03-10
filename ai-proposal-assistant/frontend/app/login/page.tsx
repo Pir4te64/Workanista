@@ -95,7 +95,7 @@ export default function LoginPage() {
       {/* Left side - Image */}
       <div className="hidden lg:flex lg:w-1/2 relative">
         <Image
-          src="/ciudad.png"
+          src="/intro.jpg"
           alt="CruzNegraDev"
           fill
           className="object-cover"
@@ -104,19 +104,29 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-surface-black/80" />
         <div className="absolute inset-0 bg-gradient-to-t from-surface-black/90 via-transparent to-surface-black/40" />
 
+        {/* Duck icon centered */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Image
+            src="/coldducklogo.png"
+            alt="ColdDuck"
+            width={600}
+            height={600}
+            className="opacity-90 drop-shadow-2xl"
+          />
+        </div>
+
         {/* Overlay content */}
         <div className="absolute bottom-0 left-0 right-0 p-12">
           <h2 className="text-4xl font-bold text-text-primary mb-3">
-            Workanista
+            ColdDuck
           </h2>
           <p className="text-lg text-text-secondary max-w-md">
-            Tu asistente de propuestas impulsado por IA. Analiza, genera y gana
-            mas proyectos.
+            Tu asistente de outreach y propuestas impulsado por IA. Analiza perfiles, genera mensajes personalizados y gana mas proyectos.
           </p>
           <div className="flex items-center gap-2 mt-6">
-            <div className="w-8 h-1 bg-brand-orange rounded-full" />
-            <div className="w-4 h-1 bg-brand-orange/50 rounded-full" />
-            <div className="w-2 h-1 bg-brand-orange/25 rounded-full" />
+            <div className="w-8 h-1 bg-brand-mint rounded-full" />
+            <div className="w-4 h-1 bg-brand-mint/50 rounded-full" />
+            <div className="w-2 h-1 bg-brand-mint/25 rounded-full" />
           </div>
         </div>
       </div>
@@ -204,7 +214,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
                 required
-                className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange transition-colors"
+                className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-mint/50 focus:border-brand-mint transition-colors"
               />
             </div>
 
@@ -220,7 +230,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   required
                   minLength={6}
-                  className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-orange/50 focus:border-brand-orange transition-colors"
+                  className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-mint/50 focus:border-brand-mint transition-colors"
                 />
               </div>
             )}
@@ -234,7 +244,7 @@ export default function LoginPage() {
                     setError(null);
                     setMessage(null);
                   }}
-                  className="text-xs text-brand-orange hover:text-brand-orange-light transition-colors"
+                  className="text-xs text-brand-mint hover:text-brand-mint-light transition-colors"
                 >
                   Olvidaste tu contrasena?
                 </button>
@@ -244,7 +254,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-brand-orange hover:bg-brand-orange-light disabled:bg-surface-border disabled:text-text-muted text-white font-semibold rounded-xl transition-colors"
+              className="w-full py-3 bg-brand-mint hover:bg-brand-mint-dark disabled:bg-surface-border disabled:text-text-muted text-text-dark font-semibold rounded-xl transition-colors"
             >
               {loading
                 ? "Cargando..."
@@ -267,7 +277,7 @@ export default function LoginPage() {
                     setError(null);
                     setMessage(null);
                   }}
-                  className="text-brand-orange hover:text-brand-orange-light transition-colors"
+                  className="text-brand-mint hover:text-brand-mint-light transition-colors"
                 >
                   Registrate
                 </button>
@@ -281,7 +291,7 @@ export default function LoginPage() {
                     setError(null);
                     setMessage(null);
                   }}
-                  className="text-brand-orange hover:text-brand-orange-light transition-colors"
+                  className="text-brand-mint hover:text-brand-mint-light transition-colors"
                 >
                   Ingresar
                 </button>

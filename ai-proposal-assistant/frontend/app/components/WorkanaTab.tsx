@@ -13,9 +13,11 @@ interface Props {
   onRemove: (id: string) => void;
   onClearCompleted: () => void;
   onUpdateItem: (id: string, updates: Partial<QueueItem>) => void;
+  onReorder: (items: QueueItem[]) => void;
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
-export default function WorkanaTab({ queue, onAdd, onRemove, onClearCompleted, onUpdateItem }: Props) {
+export default function WorkanaTab({ queue, onAdd, onRemove, onClearCompleted, onUpdateItem, onReorder, inputRef }: Props) {
   const [subTab, setSubTab] = useState<"new" | "history" | "analytics">("new");
 
   return (
@@ -25,7 +27,7 @@ export default function WorkanaTab({ queue, onAdd, onRemove, onClearCompleted, o
           onClick={() => setSubTab("new")}
           className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
             subTab === "new"
-              ? "bg-surface-card text-text-primary border-b-2 border-brand-orange"
+              ? "bg-surface-card text-text-primary border-b-2 border-brand-mint"
               : "text-text-muted hover:text-text-primary"
           }`}
         >
@@ -35,7 +37,7 @@ export default function WorkanaTab({ queue, onAdd, onRemove, onClearCompleted, o
           onClick={() => setSubTab("history")}
           className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
             subTab === "history"
-              ? "bg-surface-card text-text-primary border-b-2 border-brand-orange"
+              ? "bg-surface-card text-text-primary border-b-2 border-brand-mint"
               : "text-text-muted hover:text-text-primary"
           }`}
         >
@@ -45,7 +47,7 @@ export default function WorkanaTab({ queue, onAdd, onRemove, onClearCompleted, o
           onClick={() => setSubTab("analytics")}
           className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
             subTab === "analytics"
-              ? "bg-surface-card text-text-primary border-b-2 border-brand-orange"
+              ? "bg-surface-card text-text-primary border-b-2 border-brand-mint"
               : "text-text-muted hover:text-text-primary"
           }`}
         >
@@ -55,12 +57,13 @@ export default function WorkanaTab({ queue, onAdd, onRemove, onClearCompleted, o
 
       {subTab === "new" && (
         <div className="space-y-6">
-          <ProposalInput onAdd={onAdd} queueCount={queue.length} />
+          <ProposalInput onAdd={onAdd} queueCount={queue.length} inputRef={inputRef} />
           <ProposalQueue
             items={queue}
             onRemove={onRemove}
             onClearCompleted={onClearCompleted}
             onUpdateItem={onUpdateItem}
+            onReorder={onReorder}
           />
         </div>
       )}

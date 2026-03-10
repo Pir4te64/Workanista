@@ -8,7 +8,7 @@
   }
 
   ::selection {
-    background-color: rgba(232, 80, 2, 0.3);
+    background-color: rgba(0, 245, 160, 0.3);
   }
 
   /* Scrollbar */
@@ -16,13 +16,48 @@
     width: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #0A0A0A;
+    background: #1A1A2E;
   }
   ::-webkit-scrollbar-thumb {
-    background: #333333;
+    background: #3D3D6B;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #646464;
+    background: #00F5A0;
+  }
+}
+
+@layer components {
+  /* Glassmorphism card */
+  .glass-card {
+    @apply bg-surface-card/60 backdrop-blur-xl border border-surface-border/50 rounded-2xl;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300;
+  }
+
+  .glass-card-hover:hover {
+    box-shadow: 0 0 20px rgba(0, 245, 160, 0.08);
+    border-color: rgba(0, 245, 160, 0.2);
+  }
+
+  /* Sidebar nav item */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer;
+  }
+
+  .sidebar-item-active {
+    @apply sidebar-item bg-brand-mint/10 text-brand-mint;
+    box-shadow: 0 0 12px rgba(0, 245, 160, 0.1);
+  }
+
+  .sidebar-item-inactive {
+    @apply sidebar-item text-text-muted hover:text-text-primary hover:bg-surface-card-hover;
+  }
+
+  /* Gradient header accent */
+  .gradient-accent {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(0, 245, 160, 0.1) 50%, transparent 100%);
   }
 }

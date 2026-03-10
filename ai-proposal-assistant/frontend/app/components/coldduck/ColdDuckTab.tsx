@@ -117,13 +117,13 @@ export default function ColdDuckTab() {
           onClick={() => setSubTab("new")}
           className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
             subTab === "new"
-              ? "bg-surface-card text-text-primary border-b-2 border-brand-orange"
+              ? "bg-surface-card text-text-primary border-b-2 border-brand-mint"
               : "text-text-muted hover:text-text-primary"
           }`}
         >
           Nuevo Outreach
           {queue.length > 0 && (
-            <span className="ml-2 px-2 py-0.5 text-xs bg-brand-orange text-white rounded-full">
+            <span className="ml-2 px-2 py-0.5 text-xs bg-brand-mint text-text-dark rounded-full">
               {pendingCount + processingCount > 0
                 ? `${pendingCount + processingCount} en cola`
                 : `${doneCount} listas`}
@@ -134,7 +134,7 @@ export default function ColdDuckTab() {
           onClick={() => setSubTab("history")}
           className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
             subTab === "history"
-              ? "bg-surface-card text-text-primary border-b-2 border-brand-orange"
+              ? "bg-surface-card text-text-primary border-b-2 border-brand-mint"
               : "text-text-muted hover:text-text-primary"
           }`}
         >

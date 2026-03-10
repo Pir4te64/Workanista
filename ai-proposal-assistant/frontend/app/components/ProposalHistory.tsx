@@ -8,14 +8,18 @@ import {
   type Proposal,
 } from "@/lib/api";
 import Loader from "./Loader";
+import { useToast } from "./Toast";
+import DuckIcon from "./coldduck/DuckIcon";
+import { FadeIn } from "./AnimatedList";
 
 const RESULT_OPTIONS = [
-  { value: "won", label: "Ganada", color: "bg-brand-orange" },
+  { value: "won", label: "Ganada", color: "bg-brand-mint" },
   { value: "lost", label: "Perdida", color: "bg-red-600" },
   { value: "no_response", label: "Sin respuesta", color: "bg-text-muted" },
 ] as const;
 
 export default function ProposalHistory() {
+  const { addToast } = useToast();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +57,7 @@ export default function ProposalHistory() {
     try {
       await markResult(proposalId, result);
       await fetchProposals();
+      addToast("success", "Resultado actualizado");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al actualizar");
     }
@@ -76,6 +81,7 @@ export default function ProposalHistory() {
   const handleCopy = async (id: string, text: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedId(id);
+    addToast("success", "Copiado al portapapeles");
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -93,9 +99,12 @@ export default function ProposalHistory() {
 
   if (proposals.length === 0) {
     return (
-      <div className="text-center text-text-muted py-12">
-        No hay propuestas en el historial.
-      </div>
+      <FadeIn>
+        <div className="flex flex-col items-center justify-center py-12 text-text-muted">
+          <DuckIcon size={64} />
+          <p className="mt-4">No hay propuestas en el historial.</p>
+        </div>
+      </FadeIn>
     );
   }
 
@@ -156,6 +165,36 @@ export default function ProposalHistory() {
     setDateTo("");
   };
 
+  const handleExportCSV = () => {
+    const headers = ["fecha", "tipo_proyecto", "complejidad", "tecnologias", "precio_sugerido_min", "precio_sugerido_max", "precio_cobrado", "resultado", "texto_cliente"];
+    const rows = filteredProposals.map((p) => {
+      const a = parseAnalysis(p);
+      const response = p.responses?.[0];
+      const techs = Array.isArray(a.technologies) ? a.technologies.join("; ") : String(a.technologies || "");
+      const clientText = (p.client_text || "").slice(0, 100).replace(/"/g, '""');
+      return [
+        new Date(p.created_at).toISOString().split("T")[0],
+        String(a.project_type || ""),
+        String(a.complexity || ""),
+        techs,
+        String(a.suggested_price_min ?? ""),
+        String(a.suggested_price_max ?? ""),
+        String(response?.price_charged ?? ""),
+        String(response?.result || "no_response"),
+        `"${clientText}"`,
+      ].join(",");
+    });
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `propuestas_${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    addToast("success", `${filteredProposals.length} propuestas exportadas`);
+  };
+
   return (
     <div className="space-y-4">
       {/* Search & Filters */}
@@ -170,13 +209,13 @@ export default function ProposalHistory() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Buscar por tecnología, tipo de proyecto, texto..."
-              className="w-full pl-10 pr-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary placeholder:text-text-muted focus:border-brand-orange focus:outline-none"
+              className="w-full pl-10 pr-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary placeholder:text-text-muted focus:border-brand-mint focus:outline-none"
             />
           </div>
           <select
             value={filterResult}
             onChange={(e) => setFilterResult(e.target.value)}
-            className="px-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-orange focus:outline-none"
+            className="px-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-mint focus:outline-none"
           >
             <option value="all">Todos</option>
             <option value="won">Ganadas</option>
@@ -187,11 +226,17 @@ export default function ProposalHistory() {
             onClick={() => setShowFilters(!showFilters)}
             className={`px-3 py-2 text-sm border rounded-lg transition-colors ${
               showFilters || (priceMin || priceMax || dateFrom || dateTo)
-                ? "bg-brand-orange/15 border-brand-orange text-brand-orange"
+                ? "bg-brand-mint/15 border-brand-mint text-brand-mint"
                 : "bg-surface-dark border-surface-border text-text-muted hover:text-text-primary"
             }`}
           >
             Filtros
+          </button>
+          <button
+            onClick={handleExportCSV}
+            className="px-3 py-2 text-sm bg-brand-mint hover:bg-brand-mint-dark text-text-dark border border-transparent rounded-lg transition-colors"
+          >
+            Exportar CSV
           </button>
           {hasActiveFilters && (
             <button
@@ -213,7 +258,7 @@ export default function ProposalHistory() {
                 value={priceMin}
                 onChange={(e) => setPriceMin(e.target.value)}
                 placeholder="$0"
-                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-orange focus:outline-none"
+                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-mint focus:outline-none"
               />
             </div>
             <div>
@@ -223,7 +268,7 @@ export default function ProposalHistory() {
                 value={priceMax}
                 onChange={(e) => setPriceMax(e.target.value)}
                 placeholder="$∞"
-                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-orange focus:outline-none"
+                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-mint focus:outline-none"
               />
             </div>
             <div>
@@ -232,7 +277,7 @@ export default function ProposalHistory() {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-orange focus:outline-none"
+                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-mint focus:outline-none"
               />
             </div>
             <div>
@@ -241,7 +286,7 @@ export default function ProposalHistory() {
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-orange focus:outline-none"
+                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-mint focus:outline-none"
               />
             </div>
           </div>
@@ -255,9 +300,12 @@ export default function ProposalHistory() {
       </div>
 
       {filteredProposals.length === 0 && hasActiveFilters && (
-        <div className="text-center text-text-muted py-8">
-          No se encontraron propuestas con esos filtros.
-        </div>
+        <FadeIn>
+          <div className="flex flex-col items-center justify-center py-8 text-text-muted">
+            <DuckIcon size={64} />
+            <p className="mt-4">No se encontraron propuestas con esos filtros.</p>
+          </div>
+        </FadeIn>
       )}
 
       {filteredProposals.map((proposal) => {
@@ -292,7 +340,7 @@ export default function ProposalHistory() {
                     })}
                   </div>
                   {priceCharged && (
-                    <span className="px-2 py-0.5 text-xs bg-brand-orange/15 text-brand-orange rounded">
+                    <span className="px-2 py-0.5 text-xs bg-brand-mint/15 text-brand-mint rounded">
                       ${priceCharged} USD
                     </span>
                   )}
@@ -327,7 +375,7 @@ export default function ProposalHistory() {
               <div className="flex items-center justify-between">
                 <div className="flex gap-2 flex-wrap">
                   {analysis.project_type && (
-                    <span className="px-2 py-0.5 text-xs bg-brand-orange/10 text-brand-orange rounded">
+                    <span className="px-2 py-0.5 text-xs bg-brand-mint/10 text-brand-mint rounded">
                       {String(analysis.project_type)}
                     </span>
                   )}
@@ -337,7 +385,7 @@ export default function ProposalHistory() {
                     </span>
                   )}
                   {analysis.suggested_price_min != null && (
-                    <span className="px-2 py-0.5 text-xs bg-brand-cream/10 text-brand-cream rounded">
+                    <span className="px-2 py-0.5 text-xs bg-brand-mint/10 text-brand-mint rounded">
                       Sugerido: ${String(analysis.suggested_price_min)}-$
                       {String(analysis.suggested_price_max)}
                     </span>
@@ -353,7 +401,7 @@ export default function ProposalHistory() {
                         value={priceValue}
                         onChange={(e) => setPriceValue(e.target.value)}
                         placeholder="0"
-                        className="w-20 px-2 py-1 text-xs bg-surface-dark border border-surface-border rounded text-text-primary focus:border-brand-orange focus:outline-none"
+                        className="w-20 px-2 py-1 text-xs bg-surface-dark border border-surface-border rounded text-text-primary focus:border-brand-mint focus:outline-none"
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === "Enter")
@@ -363,7 +411,7 @@ export default function ProposalHistory() {
                       />
                       <button
                         onClick={() => handleSavePrice(proposal.id)}
-                        className="px-2 py-1 text-xs bg-brand-orange hover:bg-brand-orange-light text-white rounded transition-colors"
+                        className="px-2 py-1 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded transition-colors"
                       >
                         OK
                       </button>
@@ -486,7 +534,7 @@ export default function ProposalHistory() {
                             response.response_text
                           )
                         }
-                        className="px-3 py-1 text-xs bg-brand-orange hover:bg-brand-orange-light text-white rounded-lg transition-colors"
+                        className="px-3 py-1 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
                       >
                         {copiedId === proposal.id + "-response"
                           ? "Copiado!"
