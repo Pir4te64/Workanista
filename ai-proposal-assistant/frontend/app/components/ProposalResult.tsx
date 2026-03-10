@@ -19,56 +19,54 @@ export default function ProposalResult({ data }: Props) {
   const analysis = data.analysis;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Analysis */}
-      <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-        <h2 className="text-lg font-semibold mb-4">Analisis del proyecto</h2>
+      <div className="glass-card p-6">
+        <h2 className="text-sm font-semibold text-text-primary mb-4">Analisis del proyecto</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="text-gray-400">Tipo:</span>{" "}
-            <span className="text-white">{analysis.project_type}</span>
+            <span className="text-text-muted text-xs">Tipo</span>
+            <p className="text-text-primary mt-0.5">{analysis.project_type}</p>
           </div>
           <div>
-            <span className="text-gray-400">Complejidad:</span>{" "}
-            <span className="text-white">{analysis.complexity}</span>
+            <span className="text-text-muted text-xs">Complejidad</span>
+            <p className="text-text-primary mt-0.5">{analysis.complexity}</p>
           </div>
           <div>
-            <span className="text-gray-400">Nivel del cliente:</span>{" "}
-            <span className="text-white">
-              {analysis.client_technical_level}
-            </span>
+            <span className="text-text-muted text-xs">Nivel del cliente</span>
+            <p className="text-text-primary mt-0.5">{analysis.client_technical_level}</p>
           </div>
           <div>
-            <span className="text-gray-400">Urgencia:</span>{" "}
-            <span className="text-white">{analysis.urgency}</span>
+            <span className="text-text-muted text-xs">Urgencia</span>
+            <p className="text-text-primary mt-0.5">{analysis.urgency}</p>
           </div>
           <div className="col-span-2">
-            <span className="text-gray-400">Tecnologias:</span>{" "}
-            <span className="text-white">
+            <span className="text-text-muted text-xs">Tecnologias</span>
+            <p className="text-text-primary mt-0.5">
               {analysis.technologies?.join(", ") || "N/A"}
-            </span>
+            </p>
           </div>
           <div className="col-span-2">
-            <span className="text-gray-400">Arquitectura sugerida:</span>{" "}
-            <span className="text-white">
+            <span className="text-text-muted text-xs">Arquitectura sugerida</span>
+            <p className="text-text-primary mt-0.5">
               {analysis.suggested_architecture}
-            </span>
+            </p>
           </div>
         </div>
       </div>
 
       {/* Generated Response */}
-      <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+      <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Respuesta generada</h2>
+          <h2 className="text-sm font-semibold text-text-primary">Respuesta generada</h2>
           <button
             onClick={handleCopy}
-            className="px-4 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
+            className="btn-secondary text-xs px-3 py-1.5"
           >
             {copied ? "Copiado!" : "Copiar"}
           </button>
         </div>
-        <div className="bg-gray-800 rounded-lg p-4 whitespace-pre-wrap text-gray-200 leading-relaxed">
+        <div className="rounded-xl p-5 whitespace-pre-wrap text-sm text-text-secondary leading-relaxed" style={{ background: "rgba(255,255,255,0.03)" }}>
           {data.response}
         </div>
       </div>

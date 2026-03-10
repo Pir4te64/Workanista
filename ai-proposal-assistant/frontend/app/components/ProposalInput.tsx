@@ -63,13 +63,13 @@ export default function ProposalInput({ onAdd, queueCount, inputRef }: Props) {
   };
 
   return (
-    <div className="bg-surface-card rounded-xl p-6 border border-surface-border">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-text-primary">
+    <div className="glass-card p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-text-primary">
           Agregar propuesta a la cola
         </h2>
         {queueCount > 0 && (
-          <span className="text-sm text-text-secondary">
+          <span className="badge bg-brand-mint/10 text-brand-mint">
             {queueCount} en cola
           </span>
         )}
@@ -81,13 +81,13 @@ export default function ProposalInput({ onAdd, queueCount, inputRef }: Props) {
         onKeyDown={handleKeyDown}
         placeholder="Pega aqui la propuesta del cliente de Workana..."
         rows={6}
-        className="w-full bg-surface-dark border border-surface-border rounded-lg p-4 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-mint/50 focus:border-brand-mint resize-y"
+        className="input-premium resize-y"
       />
 
-      {/* Duplicate warning popup */}
+      {/* Duplicate warning */}
       {duplicate.show && (
         <FadeIn>
-          <div className="mt-3 p-4 bg-brand-mint/10 border border-brand-mint/40 rounded-lg">
+          <div className="mt-4 p-4 rounded-xl" style={{ background: "rgba(0, 245, 160, 0.06)", border: "1px solid rgba(0, 245, 160, 0.15)" }}>
             <p className="text-sm text-brand-mint font-medium mb-2">
               Propuesta duplicada detectada (
               {Math.round((duplicate.similarity || 0) * 100)}% similar)
@@ -98,13 +98,13 @@ export default function ProposalInput({ onAdd, queueCount, inputRef }: Props) {
             <div className="flex gap-2">
               <button
                 onClick={handleForceAdd}
-                className="px-4 py-1.5 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
+                className="btn-primary text-xs px-4 py-2"
               >
                 Agregar de todas formas
               </button>
               <button
                 onClick={handleDismissDuplicate}
-                className="px-4 py-1.5 text-xs bg-surface-card-hover hover:bg-text-dark text-text-secondary rounded-lg transition-colors"
+                className="btn-secondary text-xs px-4 py-2"
               >
                 Cancelar
               </button>
@@ -113,14 +113,17 @@ export default function ProposalInput({ onAdd, queueCount, inputRef }: Props) {
         </FadeIn>
       )}
 
-      <div className="flex items-center justify-between mt-3">
-        <span className="text-xs text-text-muted">
-          Cmd+Enter para agregar rapido
-        </span>
+      <div className="flex items-center justify-between mt-4">
+        <div className="flex items-center gap-2">
+          <kbd className="px-1.5 py-0.5 text-[10px] text-text-muted rounded" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            ⌘↵
+          </kbd>
+          <span className="text-[11px] text-text-muted">agregar rapido</span>
+        </div>
         <button
           onClick={handleAdd}
           disabled={!text.trim() || checking}
-          className="px-5 py-2 bg-brand-mint hover:bg-brand-mint-dark disabled:bg-surface-border disabled:text-text-muted text-text-dark font-medium rounded-lg transition-colors"
+          className="btn-primary"
         >
           {checking ? "Verificando..." : "Agregar a la cola"}
         </button>

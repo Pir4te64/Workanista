@@ -57,13 +57,13 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
   };
 
   return (
-    <div className="bg-surface-card rounded-xl p-6 border border-surface-border">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-14 h-14 bg-brand-mint/15 rounded-lg flex items-center justify-center text-text-primary">
-          <DuckIcon size={44} />
+    <div className="glass-card p-6">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(0, 245, 160, 0.08)" }}>
+          <DuckIcon size={36} />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-text-primary">ColdDuck</h2>
+          <h2 className="text-sm font-semibold text-text-primary">ColdDuck</h2>
           <p className="text-xs text-text-muted">
             Outreach personalizado con IA
           </p>
@@ -71,12 +71,12 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
       </div>
 
       {/* Mode toggle */}
-      <div className="flex gap-1 mb-4 bg-surface-dark rounded-lg p-1">
+      <div className="flex gap-1 mb-5 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.04)" }}>
         <button
           onClick={() => setMode("url")}
-          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+          className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
             mode === "url"
-              ? "bg-brand-mint text-text-dark"
+              ? "bg-brand-mint text-text-dark shadow-sm"
               : "text-text-muted hover:text-text-secondary"
           }`}
         >
@@ -84,9 +84,9 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
         </button>
         <button
           onClick={() => setMode("manual")}
-          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+          className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
             mode === "manual"
-              ? "bg-brand-mint text-text-dark"
+              ? "bg-brand-mint text-text-dark shadow-sm"
               : "text-text-muted hover:text-text-secondary"
           }`}
         >
@@ -94,10 +94,10 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {mode === "url" ? (
           <div>
-            <label className="text-xs text-text-secondary mb-1 block">
+            <label className="section-title block mb-2">
               URL de LinkedIn
             </label>
             <input
@@ -106,18 +106,18 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="https://www.linkedin.com/in/nombre-persona"
-              className="w-full bg-surface-dark border border-surface-border rounded-lg px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-mint/50 focus:border-brand-mint"
+              className="input-premium"
               disabled={processing}
             />
             {url && !isValidUrl(url) && (
-              <p className="text-xs text-red-400 mt-1">
+              <p className="text-xs text-red-400/80 mt-2">
                 Ingresa una URL valida de LinkedIn (linkedin.com/in/...)
               </p>
             )}
           </div>
         ) : (
           <div>
-            <label className="text-xs text-text-secondary mb-1 block">
+            <label className="section-title block mb-2">
               Pega el texto del perfil de LinkedIn
             </label>
             <textarea
@@ -126,10 +126,10 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
               onKeyDown={handleKeyDown}
               placeholder={"Copia y pega la informacion del perfil de LinkedIn aqui:\nnombre, titulo, experiencia, habilidades, etc."}
               rows={6}
-              className="w-full bg-surface-dark border border-surface-border rounded-lg px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-mint/50 focus:border-brand-mint resize-y"
+              className="input-premium resize-y"
               disabled={processing}
             />
-            <p className="text-xs text-text-muted mt-1">
+            <p className="text-xs text-text-muted mt-2">
               Usa este modo si no tenes la API de RapidAPI configurada o si el scraping falla.
             </p>
           </div>
@@ -137,21 +137,24 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
 
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="text-xs text-text-muted hover:text-text-secondary transition-colors"
+          className="text-xs text-text-muted hover:text-text-secondary transition-colors flex items-center gap-1.5"
         >
-          {showAdvanced ? "▼" : "▶"} Opciones avanzadas
+          <svg className={`w-3 h-3 transition-transform duration-200 ${showAdvanced ? "rotate-90" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+          Opciones avanzadas
         </button>
 
         {showAdvanced && (
-          <div className="space-y-3 p-4 bg-surface-dark rounded-lg">
+          <div className="space-y-4 p-5 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.04)" }}>
             <div>
-              <label className="text-xs text-text-secondary mb-1 block">
+              <label className="section-title block mb-2">
                 Tono del mensaje
               </label>
               <select
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
-                className="w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-brand-mint"
+                className="input-premium text-sm"
               >
                 <option value="profesional y cercano">
                   Profesional y cercano
@@ -165,24 +168,24 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
             </div>
 
             <div>
-              <label className="text-xs text-text-secondary mb-1 block">
+              <label className="section-title block mb-2">
                 Objetivo
               </label>
               <input
                 type="text"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                className="w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-brand-mint"
+                className="input-premium text-sm"
               />
             </div>
 
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={generateVideo}
                   onChange={(e) => setGenerateVideo(e.target.checked)}
-                  className="w-4 h-4 accent-brand-mint"
+                  className="w-4 h-4 accent-brand-mint rounded"
                 />
                 <span className="text-sm text-text-secondary">
                   Generar video con avatar (HeyGen)
@@ -193,14 +196,17 @@ export default function ColdDuckInput({ onSubmit, processing }: Props) {
         )}
       </div>
 
-      <div className="flex items-center justify-between mt-4">
-        <span className="text-xs text-text-muted">
-          Cmd+Enter para enviar
-        </span>
+      <div className="flex items-center justify-between mt-5">
+        <div className="flex items-center gap-2">
+          <kbd className="px-1.5 py-0.5 text-[10px] text-text-muted rounded" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            ⌘↵
+          </kbd>
+          <span className="text-[11px] text-text-muted">para enviar</span>
+        </div>
         <button
           onClick={handleSubmit}
           disabled={!canSubmit || processing}
-          className="px-5 py-2 bg-brand-mint hover:bg-brand-mint-dark disabled:bg-surface-border disabled:text-text-muted text-text-dark font-medium rounded-lg transition-colors"
+          className="btn-primary"
         >
           {processing ? "Procesando..." : "Generar Outreach"}
         </button>

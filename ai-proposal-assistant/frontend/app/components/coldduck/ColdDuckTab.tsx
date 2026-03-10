@@ -64,7 +64,6 @@ export default function ColdDuckTab() {
     }
   }, [queue, updateItem]);
 
-  // Process queue items
   useEffect(() => {
     const hasPending = queue.some((i) => i.status === "pending");
     const hasProcessing = queue.some((i) => i.status === "processing");
@@ -112,18 +111,23 @@ export default function ColdDuckTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-1 border-b border-surface-border">
+      <div className="flex gap-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <button
           onClick={() => setSubTab("new")}
-          className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+          className={`px-5 py-2.5 text-[13px] font-medium rounded-t-xl transition-all duration-200 flex items-center gap-2 ${
             subTab === "new"
-              ? "bg-surface-card text-text-primary border-b-2 border-brand-mint"
+              ? "text-brand-mint"
               : "text-text-muted hover:text-text-primary"
           }`}
+          style={
+            subTab === "new"
+              ? { background: "rgba(0, 245, 160, 0.06)", borderBottom: "2px solid #00F5A0" }
+              : { borderBottom: "2px solid transparent" }
+          }
         >
           Nuevo Outreach
           {queue.length > 0 && (
-            <span className="ml-2 px-2 py-0.5 text-xs bg-brand-mint text-text-dark rounded-full">
+            <span className="badge" style={{ background: "rgba(0, 245, 160, 0.15)", color: "#00F5A0", fontSize: "10px" }}>
               {pendingCount + processingCount > 0
                 ? `${pendingCount + processingCount} en cola`
                 : `${doneCount} listas`}
@@ -132,58 +136,62 @@ export default function ColdDuckTab() {
         </button>
         <button
           onClick={() => setSubTab("history")}
-          className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+          className={`px-5 py-2.5 text-[13px] font-medium rounded-t-xl transition-all duration-200 ${
             subTab === "history"
-              ? "bg-surface-card text-text-primary border-b-2 border-brand-mint"
+              ? "text-brand-mint"
               : "text-text-muted hover:text-text-primary"
           }`}
+          style={
+            subTab === "history"
+              ? { background: "rgba(0, 245, 160, 0.06)", borderBottom: "2px solid #00F5A0" }
+              : { borderBottom: "2px solid transparent" }
+          }
         >
           Historial
         </button>
       </div>
 
       {subTab === "new" && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           <ColdDuckInput onSubmit={addToQueue} processing={processingCount > 0} />
 
           {/* Queue */}
           {queue.length > 0 && (
-            <div className="bg-surface-card rounded-xl border border-surface-border">
-              <div className="p-4 border-b border-surface-border flex items-center justify-between">
+            <div className="glass-card overflow-hidden">
+              <div className="p-5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                 <div className="flex items-center gap-3">
                   <h3 className="text-sm font-medium text-text-primary">Cola de Outreach</h3>
-                  <div className="flex gap-2 text-xs text-text-muted">
+                  <div className="flex gap-3 text-xs text-text-muted">
                     {pendingCount > 0 && <span>{pendingCount} pendientes</span>}
                     {processingCount > 0 && <span className="text-yellow-400">1 procesando</span>}
-                    {doneCount > 0 && <span className="text-green-400">{doneCount} listas</span>}
+                    {doneCount > 0 && <span className="text-brand-mint">{doneCount} listas</span>}
                     {errorCount > 0 && <span className="text-red-400">{errorCount} errores</span>}
                   </div>
                 </div>
                 {(doneCount > 0 || errorCount > 0) && (
                   <button
                     onClick={clearCompleted}
-                    className="px-3 py-1 text-xs bg-surface-card-hover hover:bg-text-dark border border-surface-border rounded-lg transition-colors text-text-muted"
+                    className="btn-secondary text-xs"
                   >
                     Limpiar completadas
                   </button>
                 )}
               </div>
 
-              <div className="divide-y divide-surface-border">
-                {queue.map((item) => (
-                  <div key={item.id} className="p-4">
+              <div>
+                {queue.map((item, index) => (
+                  <div key={item.id} className="p-5" style={index > 0 ? { borderTop: "1px solid rgba(255,255,255,0.03)" } : undefined}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {/* Status indicator */}
                         <span
-                          className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                          className={`w-2 h-2 rounded-full flex-shrink-0 ${
                             item.status === "processing"
                               ? "bg-yellow-400 animate-pulse"
                               : item.status === "done"
-                              ? "bg-green-400"
+                              ? "bg-brand-mint"
                               : item.status === "error"
                               ? "bg-red-400"
-                              : "bg-text-muted"
+                              : "bg-text-muted/50"
                           }`}
                         />
                         <div className="min-w-0">
@@ -201,7 +209,7 @@ export default function ColdDuckTab() {
                             href={item.linkedin_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-2 py-1 text-xs bg-blue-600/15 text-blue-400 hover:bg-blue-600/25 rounded-lg transition-colors"
+                            className="badge" style={{ background: "rgba(59, 130, 246, 0.1)", color: "#60a5fa" }}
                           >
                             Ver perfil
                           </a>
@@ -212,7 +220,7 @@ export default function ColdDuckTab() {
                         {item.status === "done" && (
                           <button
                             onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                            className="px-2 py-1 text-xs bg-surface-card-hover hover:bg-text-dark border border-surface-border rounded-lg transition-colors"
+                            className="btn-secondary text-xs px-3 py-1.5"
                           >
                             {expandedId === item.id ? "Cerrar" : "Ver resultado"}
                           </button>
@@ -220,7 +228,7 @@ export default function ColdDuckTab() {
                         {item.status === "pending" && (
                           <button
                             onClick={() => removeFromQueue(item.id)}
-                            className="px-2 py-1 text-xs text-red-400 hover:bg-red-600/10 rounded-lg transition-colors"
+                            className="px-2.5 py-1.5 text-xs text-red-400/60 hover:text-red-400 rounded-lg transition-colors"
                           >
                             Quitar
                           </button>
@@ -228,7 +236,7 @@ export default function ColdDuckTab() {
                         {(item.status === "done" || item.status === "error") && (
                           <button
                             onClick={() => removeFromQueue(item.id)}
-                            className="px-2 py-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+                            className="px-2 py-1.5 text-xs text-text-muted/50 hover:text-text-muted transition-colors"
                           >
                             ✕
                           </button>
@@ -237,18 +245,20 @@ export default function ColdDuckTab() {
                     </div>
 
                     {item.status === "processing" && (
-                      <div className="mt-3 ml-5">
+                      <div className="mt-4 ml-5">
                         <Loader size={20} text="Analizando perfil y generando mensaje..." fullscreen={false} />
-                        <p className="text-xs text-text-muted mt-1">Esto puede tomar 10-30 segundos</p>
+                        <p className="text-xs text-text-muted mt-1.5">Esto puede tomar 10-30 segundos</p>
                       </div>
                     )}
 
                     {item.status === "error" && (
-                      <div className="mt-2 ml-5 text-xs text-red-400 bg-red-500/10 rounded-lg p-2">{item.error}</div>
+                      <div className="mt-3 ml-5 text-xs text-red-400/80 rounded-xl p-3" style={{ background: "rgba(239, 68, 68, 0.06)" }}>
+                        {item.error}
+                      </div>
                     )}
 
                     {item.status === "done" && item.result && expandedId === item.id && (
-                      <div className="mt-3">
+                      <div className="mt-4">
                         <ColdDuckResult
                           result={item.result}
                           onClose={() => setExpandedId(null)}

@@ -13,9 +13,9 @@ import DuckIcon from "./coldduck/DuckIcon";
 import { FadeIn } from "./AnimatedList";
 
 const RESULT_OPTIONS = [
-  { value: "won", label: "Ganada", color: "bg-brand-mint" },
-  { value: "lost", label: "Perdida", color: "bg-red-600" },
-  { value: "no_response", label: "Sin respuesta", color: "bg-text-muted" },
+  { value: "won", label: "Ganada", bg: "rgba(0, 245, 160, 0.15)", activeBg: "#00F5A0", activeText: "#0C0C1D" },
+  { value: "lost", label: "Perdida", bg: "rgba(239, 68, 68, 0.15)", activeBg: "#ef4444", activeText: "#fff" },
+  { value: "no_response", label: "Sin respuesta", bg: "rgba(255,255,255,0.06)", activeBg: "#6B6B85", activeText: "#fff" },
 ] as const;
 
 export default function ProposalHistory() {
@@ -87,22 +87,22 @@ export default function ProposalHistory() {
 
   if (loading) {
     return (
-      <div className="py-12">
+      <div className="py-16">
         <Loader size={40} text="Cargando historial..." />
       </div>
     );
   }
 
   if (error) {
-    return <div className="text-center text-red-400 py-12">{error}</div>;
+    return <div className="text-center text-red-400/80 py-16 text-sm">{error}</div>;
   }
 
   if (proposals.length === 0) {
     return (
       <FadeIn>
-        <div className="flex flex-col items-center justify-center py-12 text-text-muted">
-          <DuckIcon size={64} />
-          <p className="mt-4">No hay propuestas en el historial.</p>
+        <div className="flex flex-col items-center justify-center py-16 text-text-muted">
+          <DuckIcon size={56} />
+          <p className="mt-4 text-sm">No hay propuestas en el historial.</p>
         </div>
       </FadeIn>
     );
@@ -117,7 +117,6 @@ export default function ProposalHistory() {
     const a = parseAnalysis(p);
     const response = p.responses?.[0];
 
-    // Text search: client_text, technologies, project_type, complexity
     if (searchText) {
       const q = searchText.toLowerCase();
       const techs = Array.isArray(a.technologies) ? a.technologies.join(" ") : String(a.technologies || "");
@@ -131,18 +130,15 @@ export default function ProposalHistory() {
       if (!searchable.includes(q)) return false;
     }
 
-    // Result filter
     if (filterResult !== "all") {
       const currentResult = response?.result || "no_response";
       if (currentResult !== filterResult) return false;
     }
 
-    // Price range
     const price = response?.price_charged;
     if (priceMin && (!price || price < parseFloat(priceMin))) return false;
     if (priceMax && (!price || price > parseFloat(priceMax))) return false;
 
-    // Date range
     const created = new Date(p.created_at);
     if (dateFrom && created < new Date(dateFrom)) return false;
     if (dateTo) {
@@ -198,24 +194,24 @@ export default function ProposalHistory() {
   return (
     <div className="space-y-4">
       {/* Search & Filters */}
-      <div className="bg-surface-card rounded-xl border border-surface-border p-4 space-y-3">
+      <div className="glass-card p-5 space-y-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Buscar por tecnología, tipo de proyecto, texto..."
-              className="w-full pl-10 pr-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary placeholder:text-text-muted focus:border-brand-mint focus:outline-none"
+              placeholder="Buscar por tecnologia, tipo de proyecto, texto..."
+              className="input-premium pl-10 text-sm"
             />
           </div>
           <select
             value={filterResult}
             onChange={(e) => setFilterResult(e.target.value)}
-            className="px-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-mint focus:outline-none"
+            className="input-premium w-auto text-sm"
           >
             <option value="all">Todos</option>
             <option value="won">Ganadas</option>
@@ -224,24 +220,24 @@ export default function ProposalHistory() {
           </select>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-3 py-2 text-sm border rounded-lg transition-colors ${
+            className={`btn-secondary text-sm ${
               showFilters || (priceMin || priceMax || dateFrom || dateTo)
-                ? "bg-brand-mint/15 border-brand-mint text-brand-mint"
-                : "bg-surface-dark border-surface-border text-text-muted hover:text-text-primary"
+                ? "!border-brand-mint/30 !text-brand-mint"
+                : ""
             }`}
           >
             Filtros
           </button>
           <button
             onClick={handleExportCSV}
-            className="px-3 py-2 text-sm bg-brand-mint hover:bg-brand-mint-dark text-text-dark border border-transparent rounded-lg transition-colors"
+            className="btn-primary text-sm"
           >
             Exportar CSV
           </button>
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="px-3 py-2 text-sm bg-surface-dark border border-surface-border rounded-lg text-red-400 hover:bg-red-600/10 transition-colors"
+              className="btn-secondary text-sm !text-red-400/80 hover:!text-red-400"
             >
               Limpiar
             </button>
@@ -250,43 +246,43 @@ export default function ProposalHistory() {
 
         {/* Extended filters */}
         {showFilters && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2 border-t border-surface-border">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
             <div>
-              <label className="block text-xs text-text-muted mb-1">Precio mín</label>
+              <label className="section-title block mb-2">Precio min</label>
               <input
                 type="number"
                 value={priceMin}
                 onChange={(e) => setPriceMin(e.target.value)}
                 placeholder="$0"
-                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-mint focus:outline-none"
+                className="input-premium text-sm py-2.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-text-muted mb-1">Precio máx</label>
+              <label className="section-title block mb-2">Precio max</label>
               <input
                 type="number"
                 value={priceMax}
                 onChange={(e) => setPriceMax(e.target.value)}
                 placeholder="$∞"
-                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-mint focus:outline-none"
+                className="input-premium text-sm py-2.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-text-muted mb-1">Desde</label>
+              <label className="section-title block mb-2">Desde</label>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-mint focus:outline-none"
+                className="input-premium text-sm py-2.5"
               />
             </div>
             <div>
-              <label className="block text-xs text-text-muted mb-1">Hasta</label>
+              <label className="section-title block mb-2">Hasta</label>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="w-full px-3 py-1.5 text-sm bg-surface-dark border border-surface-border rounded-lg text-text-primary focus:border-brand-mint focus:outline-none"
+                className="input-premium text-sm py-2.5"
               />
             </div>
           </div>
@@ -301,9 +297,9 @@ export default function ProposalHistory() {
 
       {filteredProposals.length === 0 && hasActiveFilters && (
         <FadeIn>
-          <div className="flex flex-col items-center justify-center py-8 text-text-muted">
-            <DuckIcon size={64} />
-            <p className="mt-4">No se encontraron propuestas con esos filtros.</p>
+          <div className="flex flex-col items-center justify-center py-12 text-text-muted">
+            <DuckIcon size={56} />
+            <p className="mt-4 text-sm">No se encontraron propuestas con esos filtros.</p>
           </div>
         </FadeIn>
       )}
@@ -324,11 +320,11 @@ export default function ProposalHistory() {
         return (
           <div
             key={proposal.id}
-            className="bg-surface-card rounded-xl border border-surface-border"
+            className="glass-card transition-all duration-200 hover:shadow-card-hover"
           >
             {/* Header */}
-            <div className="p-5">
-              <div className="flex items-start justify-between mb-3">
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="text-xs text-text-muted">
                     {new Date(proposal.created_at).toLocaleDateString("es-ES", {
@@ -340,23 +336,24 @@ export default function ProposalHistory() {
                     })}
                   </div>
                   {priceCharged && (
-                    <span className="px-2 py-0.5 text-xs bg-brand-mint/15 text-brand-mint rounded">
+                    <span className="badge" style={{ background: "rgba(0, 245, 160, 0.1)", color: "#00F5A0" }}>
                       ${priceCharged} USD
                     </span>
                   )}
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1.5">
                   {RESULT_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       onClick={() =>
                         handleMarkResult(proposal.id, opt.value)
                       }
-                      className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                      className="px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200"
+                      style={
                         currentResult === opt.value
-                          ? `${opt.color} text-white`
-                          : "bg-surface-card-hover text-text-muted hover:bg-text-dark"
-                      }`}
+                          ? { background: opt.activeBg, color: opt.activeText }
+                          : { background: "rgba(255,255,255,0.04)", color: "#A0A0B8" }
+                      }
                     >
                       {opt.label}
                     </button>
@@ -365,27 +362,25 @@ export default function ProposalHistory() {
               </div>
 
               {/* Proposal preview */}
-              <div className="mb-3">
-                <p className="text-sm text-text-secondary line-clamp-2">
-                  {proposal.client_text}
-                </p>
-              </div>
+              <p className="text-sm text-text-secondary line-clamp-2 mb-4 leading-relaxed">
+                {proposal.client_text}
+              </p>
 
               {/* Tags + price + actions */}
               <div className="flex items-center justify-between">
                 <div className="flex gap-2 flex-wrap">
                   {analysis.project_type && (
-                    <span className="px-2 py-0.5 text-xs bg-brand-mint/10 text-brand-mint rounded">
+                    <span className="badge" style={{ background: "rgba(0, 245, 160, 0.08)", color: "#00F5A0" }}>
                       {String(analysis.project_type)}
                     </span>
                   )}
                   {analysis.complexity && (
-                    <span className="px-2 py-0.5 text-xs bg-text-dark/50 text-text-secondary rounded">
+                    <span className="badge" style={{ background: "rgba(255,255,255,0.06)", color: "#A0A0B8" }}>
                       {String(analysis.complexity)}
                     </span>
                   )}
                   {analysis.suggested_price_min != null && (
-                    <span className="px-2 py-0.5 text-xs bg-brand-mint/10 text-brand-mint rounded">
+                    <span className="badge" style={{ background: "rgba(0, 245, 160, 0.08)", color: "#00F5A0" }}>
                       Sugerido: ${String(analysis.suggested_price_min)}-$
                       {String(analysis.suggested_price_max)}
                     </span>
@@ -394,14 +389,14 @@ export default function ProposalHistory() {
                 <div className="flex items-center gap-2">
                   {/* Price input */}
                   {editingPriceId === proposal.id ? (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <span className="text-xs text-text-muted">$</span>
                       <input
                         type="number"
                         value={priceValue}
                         onChange={(e) => setPriceValue(e.target.value)}
                         placeholder="0"
-                        className="w-20 px-2 py-1 text-xs bg-surface-dark border border-surface-border rounded text-text-primary focus:border-brand-mint focus:outline-none"
+                        className="input-premium w-20 text-xs py-1.5 px-2"
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === "Enter")
@@ -411,7 +406,7 @@ export default function ProposalHistory() {
                       />
                       <button
                         onClick={() => handleSavePrice(proposal.id)}
-                        className="px-2 py-1 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded transition-colors"
+                        className="btn-primary text-xs px-2.5 py-1.5"
                       >
                         OK
                       </button>
@@ -422,7 +417,7 @@ export default function ProposalHistory() {
                         setEditingPriceId(proposal.id);
                         setPriceValue(priceCharged?.toString() || "");
                       }}
-                      className="px-3 py-1 text-xs bg-surface-card-hover hover:bg-text-dark border border-surface-border rounded-lg transition-colors"
+                      className="btn-secondary text-xs px-3 py-1.5"
                     >
                       {priceCharged ? `$${priceCharged}` : "Precio"}
                     </button>
@@ -431,7 +426,7 @@ export default function ProposalHistory() {
                     onClick={() =>
                       setExpandedId(isExpanded ? null : proposal.id)
                     }
-                    className="px-3 py-1 text-xs bg-surface-card-hover hover:bg-text-dark border border-surface-border rounded-lg transition-colors"
+                    className="btn-secondary text-xs px-3 py-1.5"
                   >
                     {isExpanded ? "Cerrar" : "Ver todo"}
                   </button>
@@ -441,11 +436,10 @@ export default function ProposalHistory() {
 
             {/* Expanded content */}
             {isExpanded && (
-              <div className="border-t border-surface-border p-5 space-y-4">
-                {/* Full proposal text with copy */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-text-secondary">
+              <div className="p-6 pt-0 space-y-5" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                <div className="pt-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="section-title">
                       Propuesta del cliente (completa)
                     </h3>
                     <button
@@ -455,14 +449,14 @@ export default function ProposalHistory() {
                           proposal.client_text
                         )
                       }
-                      className="px-3 py-1 text-xs bg-surface-card-hover hover:bg-text-dark border border-surface-border rounded-lg transition-colors"
+                      className="btn-secondary text-xs px-3 py-1.5"
                     >
                       {copiedId === proposal.id + "-proposal"
                         ? "Copiado!"
                         : "Copiar propuesta"}
                     </button>
                   </div>
-                  <div className="bg-surface-dark rounded-lg p-4 text-sm text-text-secondary max-h-48 overflow-y-auto whitespace-pre-wrap">
+                  <div className="rounded-xl p-5 text-sm text-text-secondary max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed" style={{ background: "rgba(255,255,255,0.03)" }}>
                     {proposal.client_text}
                   </div>
                 </div>
@@ -470,61 +464,57 @@ export default function ProposalHistory() {
                 {/* Analysis details */}
                 {analysis.project_type && (
                   <div>
-                    <h3 className="text-sm font-medium text-text-secondary mb-2">
+                    <h3 className="section-title mb-3">
                       Analisis
                     </h3>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
-                        <span className="text-text-muted">Tipo:</span>{" "}
-                        <span className="text-text-primary">
+                        <span className="text-text-muted">Tipo</span>
+                        <p className="text-text-primary mt-0.5">
                           {String(analysis.project_type)}
-                        </span>
+                        </p>
                       </div>
                       <div>
-                        <span className="text-text-muted">Complejidad:</span>{" "}
-                        <span className="text-text-primary">
+                        <span className="text-text-muted">Complejidad</span>
+                        <p className="text-text-primary mt-0.5">
                           {String(analysis.complexity)}
-                        </span>
+                        </p>
                       </div>
                       <div>
-                        <span className="text-text-muted">
-                          Nivel cliente:
-                        </span>{" "}
-                        <span className="text-text-primary">
+                        <span className="text-text-muted">Nivel cliente</span>
+                        <p className="text-text-primary mt-0.5">
                           {String(analysis.client_technical_level)}
-                        </span>
+                        </p>
                       </div>
                       <div>
-                        <span className="text-text-muted">Urgencia:</span>{" "}
-                        <span className="text-text-primary">
+                        <span className="text-text-muted">Urgencia</span>
+                        <p className="text-text-primary mt-0.5">
                           {String(analysis.urgency)}
-                        </span>
+                        </p>
                       </div>
                       <div className="col-span-2">
-                        <span className="text-text-muted">Tecnologias:</span>{" "}
-                        <span className="text-text-primary">
+                        <span className="text-text-muted">Tecnologias</span>
+                        <p className="text-text-primary mt-0.5">
                           {Array.isArray(analysis.technologies)
                             ? (analysis.technologies as string[]).join(", ")
                             : String(analysis.technologies || "N/A")}
-                        </span>
+                        </p>
                       </div>
                       <div className="col-span-2">
-                        <span className="text-text-muted">
-                          Arquitectura:
-                        </span>{" "}
-                        <span className="text-text-primary">
+                        <span className="text-text-muted">Arquitectura</span>
+                        <p className="text-text-primary mt-0.5">
                           {String(analysis.suggested_architecture || "N/A")}
-                        </span>
+                        </p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Generated response with copy */}
+                {/* Generated response */}
                 {response && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-text-secondary">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="section-title">
                         Respuesta generada
                       </h3>
                       <button
@@ -534,14 +524,14 @@ export default function ProposalHistory() {
                             response.response_text
                           )
                         }
-                        className="px-3 py-1 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
+                        className="btn-primary text-xs px-3 py-1.5"
                       >
                         {copiedId === proposal.id + "-response"
                           ? "Copiado!"
                           : "Copiar respuesta"}
                       </button>
                     </div>
-                    <div className="bg-surface-dark rounded-lg p-4 whitespace-pre-wrap text-sm text-text-primary leading-relaxed">
+                    <div className="rounded-xl p-5 whitespace-pre-wrap text-sm text-text-secondary leading-relaxed" style={{ background: "rgba(255,255,255,0.03)" }}>
                       {response.response_text}
                     </div>
                   </div>

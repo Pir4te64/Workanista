@@ -42,17 +42,18 @@ function VideoSection({ video, outreachId }: { video: VideoData; outreachId: str
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   return (
-    <div className="p-4 bg-surface-dark rounded-lg">
+    <div className="p-5 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.04)" }}>
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs font-medium text-text-secondary">Video Avatar</span>
         <span
-          className={`px-2 py-0.5 text-xs rounded ${
+          className="badge"
+          style={
             videoState.status === "completed"
-              ? "bg-green-500/15 text-green-400"
+              ? { background: "rgba(34,197,94,0.1)", color: "#4ade80" }
               : videoState.status === "processing"
-              ? "bg-yellow-500/15 text-yellow-400"
-              : "bg-red-500/15 text-red-400"
-          }`}
+              ? { background: "rgba(234,179,8,0.1)", color: "#facc15" }
+              : { background: "rgba(239,68,68,0.1)", color: "#f87171" }
+          }
         >
           {videoState.status === "processing" ? "Generando..." : videoState.status}
         </span>
@@ -60,7 +61,7 @@ function VideoSection({ video, outreachId }: { video: VideoData; outreachId: str
 
       {videoState.status === "processing" && (
         <div className="space-y-2">
-          <div className="w-full bg-surface-border rounded-full h-2 overflow-hidden">
+          <div className="w-full rounded-full h-1.5 overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
             <div
               className="h-full bg-brand-mint rounded-full transition-all duration-1000 ease-out"
               style={{ width: `${progressPercent}%` }}
@@ -77,17 +78,17 @@ function VideoSection({ video, outreachId }: { video: VideoData; outreachId: str
       )}
 
       {videoState.status === "completed" && videoState.video_url && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <video
             src={videoState.video_url}
             controls
-            className="w-full rounded-lg max-h-96"
+            className="w-full rounded-xl max-h-96"
           />
           <a
             href={videoState.video_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block px-3 py-1 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
+            className="btn-primary inline-block text-xs"
           >
             Descargar video
           </a>
@@ -95,7 +96,7 @@ function VideoSection({ video, outreachId }: { video: VideoData; outreachId: str
       )}
 
       {videoState.status === "failed" && (
-        <p className="text-xs text-red-400">
+        <p className="text-xs text-red-400/80">
           Error generando el video. Intenta nuevamente desde el historial.
         </p>
       )}
@@ -122,15 +123,15 @@ export default function ColdDuckResult({ result, onClose }: Props) {
   };
 
   return (
-    <div className="bg-surface-card rounded-xl border border-brand-mint/30">
-      <div className="p-5 border-b border-surface-border">
+    <div className="glass-card" style={{ borderColor: "rgba(0, 245, 160, 0.12)" }}>
+      <div className="p-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-text-primary">
+            <h3 className="text-base font-semibold text-text-primary">
               {profile.full_name}
             </h3>
-            <p className="text-sm text-text-secondary">{profile.headline}</p>
-            <div className="flex items-center gap-3 mt-1">
+            <p className="text-sm text-text-secondary mt-0.5">{profile.headline}</p>
+            <div className="flex items-center gap-3 mt-2">
               <p className="text-xs text-text-muted">
                 {profile.current_role} @ {profile.current_company}
               </p>
@@ -139,7 +140,7 @@ export default function ColdDuckResult({ result, onClose }: Props) {
                   href={linkedinUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-2 py-0.5 text-xs bg-blue-600/15 text-blue-400 hover:bg-blue-600/25 rounded transition-colors"
+                  className="badge" style={{ background: "rgba(59, 130, 246, 0.1)", color: "#60a5fa" }}
                 >
                   Ver perfil en LinkedIn
                 </a>
@@ -148,44 +149,49 @@ export default function ColdDuckResult({ result, onClose }: Props) {
           </div>
           <button
             onClick={onClose}
-            className="text-text-muted hover:text-text-primary transition-colors text-lg"
+            className="text-text-muted/50 hover:text-text-muted transition-colors text-sm"
           >
             ✕
           </button>
         </div>
       </div>
 
-      <div className="flex gap-1 px-5 pt-3 border-b border-surface-border">
+      <div className="flex gap-1 px-6 pt-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
         {(["message", "analysis", "profile"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-3 py-2 text-xs font-medium rounded-t-lg transition-colors ${
+            className={`px-4 py-2.5 text-xs font-medium rounded-t-lg transition-all duration-200 ${
               activeTab === tab
-                ? "bg-surface-dark text-text-primary border-b-2 border-brand-mint"
+                ? "text-brand-mint"
                 : "text-text-muted hover:text-text-primary"
             }`}
+            style={
+              activeTab === tab
+                ? { background: "rgba(0, 245, 160, 0.06)", borderBottom: "2px solid #00F5A0" }
+                : { borderBottom: "2px solid transparent" }
+            }
           >
             {tab === "message" ? "Mensaje" : tab === "analysis" ? "Analisis" : "Perfil"}
           </button>
         ))}
       </div>
 
-      <div className="p-5">
+      <div className="p-6">
         {activeTab === "message" && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-text-secondary">
+              <h4 className="section-title">
                 Mensaje generado
               </h4>
               <button
                 onClick={() => handleCopy(message, "message")}
-                className="px-3 py-1 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
+                className="btn-primary text-xs px-3 py-1.5"
               >
                 {copiedField === "message" ? "Copiado!" : "Copiar mensaje"}
               </button>
             </div>
-            <div className="bg-surface-dark rounded-lg p-4 whitespace-pre-wrap text-sm text-text-primary leading-relaxed">
+            <div className="rounded-xl p-5 whitespace-pre-wrap text-sm text-text-primary leading-relaxed" style={{ background: "rgba(255,255,255,0.03)" }}>
               {message}
             </div>
 
@@ -196,25 +202,25 @@ export default function ColdDuckResult({ result, onClose }: Props) {
         )}
 
         {activeTab === "analysis" && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <p className="text-sm text-text-primary mb-3">
+              <p className="text-sm text-text-primary leading-relaxed mb-3">
                 {analysis.person_summary}
               </p>
-              <p className="text-xs text-text-muted mb-1">
+              <p className="text-xs text-text-muted">
                 Mejor approach: <span className="text-text-secondary">{analysis.best_approach}</span>
               </p>
             </div>
 
             <div>
-              <h4 className="text-xs font-medium text-text-muted mb-2 uppercase">
+              <h4 className="section-title mb-3">
                 Pain Points
               </h4>
               <div className="flex flex-wrap gap-2">
                 {analysis.pain_points?.map((p: string, i: number) => (
                   <span
                     key={i}
-                    className="px-2 py-1 text-xs bg-red-500/10 text-red-400 rounded"
+                    className="badge" style={{ background: "rgba(239, 68, 68, 0.08)", color: "#f87171" }}
                   >
                     {p}
                   </span>
@@ -223,14 +229,14 @@ export default function ColdDuckResult({ result, onClose }: Props) {
             </div>
 
             <div>
-              <h4 className="text-xs font-medium text-text-muted mb-2 uppercase">
+              <h4 className="section-title mb-3">
                 Connection Hooks
               </h4>
               <div className="flex flex-wrap gap-2">
                 {analysis.connection_hooks?.map((h: string, i: number) => (
                   <span
                     key={i}
-                    className="px-2 py-1 text-xs bg-brand-mint/10 text-brand-mint rounded"
+                    className="badge" style={{ background: "rgba(0, 245, 160, 0.08)", color: "#00F5A0" }}
                   >
                     {h}
                   </span>
@@ -239,7 +245,7 @@ export default function ColdDuckResult({ result, onClose }: Props) {
             </div>
 
             <div>
-              <h4 className="text-xs font-medium text-text-muted mb-2 uppercase">
+              <h4 className="section-title mb-3">
                 Relevancia de servicios
               </h4>
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -260,31 +266,31 @@ export default function ColdDuckResult({ result, onClose }: Props) {
         )}
 
         {activeTab === "profile" && (
-          <div className="space-y-3 text-xs">
-            <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-4 text-xs">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <span className="text-text-muted">Industria:</span>{" "}
-                <span className="text-text-primary">{profile.industry}</span>
+                <span className="text-text-muted">Industria</span>
+                <p className="text-text-primary mt-0.5">{profile.industry}</p>
               </div>
               <div>
-                <span className="text-text-muted">Ubicacion:</span>{" "}
-                <span className="text-text-primary">
+                <span className="text-text-muted">Ubicacion</span>
+                <p className="text-text-primary mt-0.5">
                   {profile.location}, {profile.country}
-                </span>
+                </p>
               </div>
             </div>
             {profile.summary && (
               <div>
-                <span className="text-text-muted">Resumen:</span>
-                <p className="text-text-secondary mt-1">{profile.summary}</p>
+                <span className="text-text-muted">Resumen</span>
+                <p className="text-text-secondary mt-1 leading-relaxed">{profile.summary}</p>
               </div>
             )}
             {profile.experiences?.length > 0 && (
               <div>
-                <span className="text-text-muted">Experiencia:</span>
-                <div className="mt-1 space-y-2">
+                <span className="text-text-muted">Experiencia</span>
+                <div className="mt-2 space-y-2">
                   {profile.experiences.map((exp: { title: string; company: string }, i: number) => (
-                    <div key={i} className="pl-3 border-l border-surface-border">
+                    <div key={i} className="pl-3" style={{ borderLeft: "2px solid rgba(255,255,255,0.06)" }}>
                       <span className="text-text-primary font-medium">
                         {exp.title}
                       </span>{" "}
@@ -296,12 +302,12 @@ export default function ColdDuckResult({ result, onClose }: Props) {
             )}
             {profile.skills?.length > 0 && (
               <div>
-                <span className="text-text-muted">Skills:</span>
-                <div className="flex flex-wrap gap-1 mt-1">
+                <span className="text-text-muted">Skills</span>
+                <div className="flex flex-wrap gap-1.5 mt-2">
                   {profile.skills.slice(0, 15).map((s: string, i: number) => (
                     <span
                       key={i}
-                      className="px-2 py-0.5 bg-surface-dark text-text-secondary rounded"
+                      className="badge" style={{ background: "rgba(255,255,255,0.04)", color: "#A0A0B8" }}
                     >
                       {s}
                     </span>

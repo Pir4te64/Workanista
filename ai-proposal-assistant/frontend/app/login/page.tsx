@@ -101,8 +101,8 @@ export default function LoginPage() {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-surface-black/80" />
-        <div className="absolute inset-0 bg-gradient-to-t from-surface-black/90 via-transparent to-surface-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-surface-black/90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-surface-black/95 via-transparent to-surface-black/50" />
 
         {/* Duck icon centered */}
         <div className="absolute inset-0 flex items-center justify-center">
@@ -117,16 +117,16 @@ export default function LoginPage() {
 
         {/* Overlay content */}
         <div className="absolute bottom-0 left-0 right-0 p-12">
-          <h2 className="text-4xl font-bold text-text-primary mb-3">
+          <h2 className="text-4xl font-semibold text-text-primary mb-3 tracking-tight">
             ColdDuck
           </h2>
-          <p className="text-lg text-text-secondary max-w-md">
+          <p className="text-base text-text-secondary max-w-md leading-relaxed">
             Tu asistente de outreach y propuestas impulsado por IA. Analiza perfiles, genera mensajes personalizados y gana mas proyectos.
           </p>
-          <div className="flex items-center gap-2 mt-6">
+          <div className="flex items-center gap-2 mt-8">
             <div className="w-8 h-1 bg-brand-mint rounded-full" />
-            <div className="w-4 h-1 bg-brand-mint/50 rounded-full" />
-            <div className="w-2 h-1 bg-brand-mint/25 rounded-full" />
+            <div className="w-4 h-1 bg-brand-mint/40 rounded-full" />
+            <div className="w-2 h-1 bg-brand-mint/20 rounded-full" />
           </div>
         </div>
       </div>
@@ -136,14 +136,14 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-8">
           {/* Logo */}
           <div className="text-center lg:text-left">
-            <h1 className="text-2xl font-bold text-text-primary">
+            <h1 className="text-2xl font-semibold text-text-primary tracking-tight">
               {mode === "login"
                 ? "Bienvenido"
                 : mode === "signup"
                 ? "Crear cuenta"
                 : "Recuperar contrasena"}
             </h1>
-            <p className="text-sm text-text-secondary mt-2">
+            <p className="text-sm text-text-muted mt-2">
               {mode === "login"
                 ? "Ingresa a tu cuenta para continuar"
                 : mode === "signup"
@@ -156,7 +156,8 @@ export default function LoginPage() {
           {mode !== "forgot" && (
             <button
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-surface-card border border-surface-border rounded-xl text-text-primary hover:bg-surface-card-hover transition-colors"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-text-primary transition-all duration-200 hover:shadow-glow"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -176,28 +177,28 @@ export default function LoginPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Continuar con Google
+              <span className="text-sm font-medium">Continuar con Google</span>
             </button>
           )}
 
           {mode !== "forgot" && (
             <div className="flex items-center gap-4">
-              <div className="flex-1 h-px bg-surface-border" />
+              <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
               <span className="text-xs text-text-muted">o</span>
-              <div className="flex-1 h-px bg-surface-border" />
+              <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
             </div>
           )}
 
           {/* Success message */}
           {message && (
-            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+            <div className="p-4 rounded-xl" style={{ background: "rgba(34, 197, 94, 0.06)", border: "1px solid rgba(34, 197, 94, 0.15)" }}>
               <p className="text-sm text-green-400">{message}</p>
             </div>
           )}
 
           {/* Error message */}
           {error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+            <div className="p-4 rounded-xl" style={{ background: "rgba(239, 68, 68, 0.06)", border: "1px solid rgba(239, 68, 68, 0.15)" }}>
               <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
@@ -205,7 +206,7 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="text-sm text-text-secondary mb-1.5 block">
+              <label className="section-title block mb-2">
                 Email
               </label>
               <input
@@ -214,13 +215,13 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
                 required
-                className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-mint/50 focus:border-brand-mint transition-colors"
+                className="input-premium"
               />
             </div>
 
             {mode !== "forgot" && (
               <div>
-                <label className="text-sm text-text-secondary mb-1.5 block">
+                <label className="section-title block mb-2">
                   Contrasena
                 </label>
                 <input
@@ -230,7 +231,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   required
                   minLength={6}
-                  className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-mint/50 focus:border-brand-mint transition-colors"
+                  className="input-premium"
                 />
               </div>
             )}
@@ -244,7 +245,7 @@ export default function LoginPage() {
                     setError(null);
                     setMessage(null);
                   }}
-                  className="text-xs text-brand-mint hover:text-brand-mint-light transition-colors"
+                  className="text-xs text-brand-mint/80 hover:text-brand-mint transition-colors"
                 >
                   Olvidaste tu contrasena?
                 </button>
@@ -254,7 +255,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-brand-mint hover:bg-brand-mint-dark disabled:bg-surface-border disabled:text-text-muted text-text-dark font-semibold rounded-xl transition-colors"
+              className="btn-primary w-full py-3"
             >
               {loading
                 ? "Cargando..."
@@ -277,7 +278,7 @@ export default function LoginPage() {
                     setError(null);
                     setMessage(null);
                   }}
-                  className="text-brand-mint hover:text-brand-mint-light transition-colors"
+                  className="text-brand-mint/80 hover:text-brand-mint transition-colors"
                 >
                   Registrate
                 </button>
@@ -291,7 +292,7 @@ export default function LoginPage() {
                     setError(null);
                     setMessage(null);
                   }}
-                  className="text-brand-mint hover:text-brand-mint-light transition-colors"
+                  className="text-brand-mint/80 hover:text-brand-mint transition-colors"
                 >
                   Ingresar
                 </button>
@@ -301,7 +302,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <div className="pt-8 text-center">
-            <p className="text-xs text-text-muted">
+            <p className="text-[11px] text-text-muted/60">
               CruzNegraDev LLC &middot; Workanista
             </p>
           </div>

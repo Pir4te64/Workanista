@@ -103,9 +103,9 @@ export default function ProposalQueue({
   if (items.length === 0) {
     return (
       <FadeIn>
-        <div className="text-center text-text-muted py-8 bg-surface-card rounded-xl border border-surface-border flex flex-col items-center gap-3">
-          <DuckIcon size={64} />
-          <p>La cola esta vacia. Agrega propuestas arriba para comenzar.</p>
+        <div className="glass-card flex flex-col items-center justify-center py-14 text-text-muted">
+          <DuckIcon size={56} />
+          <p className="mt-4 text-sm">La cola esta vacia. Agrega propuestas arriba para comenzar.</p>
         </div>
       </FadeIn>
     );
@@ -119,7 +119,7 @@ export default function ProposalQueue({
           <button
             onClick={processQueue}
             disabled={processing || pendingItems.length === 0}
-            className="px-5 py-2.5 bg-brand-mint hover:bg-brand-mint-dark disabled:bg-surface-border disabled:text-text-muted text-text-dark font-medium rounded-lg transition-colors"
+            className="btn-primary"
           >
             {processing
               ? `Procesando...`
@@ -128,22 +128,22 @@ export default function ProposalQueue({
           {doneItems.length > 0 && (
             <button
               onClick={onClearCompleted}
-              className="px-4 py-2.5 text-sm bg-surface-card hover:bg-surface-card-hover border border-surface-border text-text-secondary rounded-lg transition-colors"
+              className="btn-secondary text-sm"
             >
               Limpiar completadas
             </button>
           )}
         </div>
-        <span className="text-sm text-text-secondary">
+        <span className="text-xs text-text-muted">
           {doneItems.length}/{items.length} procesadas
         </span>
       </div>
 
       {/* Progress bar */}
       {processing && (
-        <div className="w-full bg-surface-border rounded-full h-1.5">
+        <div className="w-full rounded-full h-1" style={{ background: "rgba(255,255,255,0.06)" }}>
           <div
-            className="bg-brand-mint h-1.5 rounded-full transition-all duration-500"
+            className="bg-brand-mint h-1 rounded-full transition-all duration-500"
             style={{
               width: `${(doneItems.length / items.length) * 100}%`,
             }}
@@ -165,24 +165,22 @@ export default function ProposalQueue({
               onDragOver={(e) => handleDragOver(e, index)}
               onDrop={(e) => handleDrop(e, index)}
               onDragEnd={handleDragEnd}
-              className={`bg-surface-card rounded-xl border transition-colors ${
-                isDragOver
-                  ? "border-brand-mint"
-                  : item.status === "processing"
-                  ? "border-brand-mint/60"
-                  : item.status === "done"
-                  ? "border-brand-mint/30"
-                  : item.status === "error"
-                  ? "border-red-800"
-                  : "border-surface-border"
-              } ${isPending ? "cursor-grab active:cursor-grabbing" : ""} ${
+              className={`glass-card transition-all duration-200 ${
+                isDragOver ? "!border-brand-mint/50" : ""
+              } ${
+                item.status === "processing" ? "!border-brand-mint/30" : ""
+              } ${
+                item.status === "error" ? "!border-red-500/30" : ""
+              } ${
+                isPending ? "cursor-grab active:cursor-grabbing" : ""
+              } ${
                 dragIndex === index ? "opacity-50" : ""
               }`}
             >
               {/* Item header */}
-              <div className="flex items-center justify-between p-4">
+              <div className="flex items-center justify-between p-5">
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-xs text-text-muted font-mono w-6 shrink-0">
+                  <span className="text-[11px] text-text-muted font-mono w-6 shrink-0">
                     #{index + 1}
                   </span>
                   <StatusBadge status={item.status} />
@@ -199,7 +197,7 @@ export default function ProposalQueue({
                             expandedId === item.id ? null : item.id
                           )
                         }
-                        className="px-3 py-1 text-xs bg-surface-card-hover hover:bg-text-dark border border-surface-border rounded-lg transition-colors"
+                        className="btn-secondary text-xs px-3 py-1.5"
                       >
                         {expandedId === item.id ? "Cerrar" : "Ver"}
                       </button>
@@ -207,7 +205,7 @@ export default function ProposalQueue({
                         onClick={() =>
                           handleCopy(item.id, item.result!.response)
                         }
-                        className="px-3 py-1 text-xs bg-brand-mint hover:bg-brand-mint-dark text-text-dark rounded-lg transition-colors"
+                        className="btn-primary text-xs px-3 py-1.5"
                       >
                         {copiedId === item.id ? "Copiado!" : "Copiar"}
                       </button>
@@ -216,7 +214,7 @@ export default function ProposalQueue({
                   {item.status === "pending" && (
                     <button
                       onClick={() => onRemove(item.id)}
-                      className="px-3 py-1 text-xs text-red-400 hover:text-red-300 hover:bg-surface-card-hover rounded-lg transition-colors"
+                      className="px-3 py-1.5 text-xs text-red-400/60 hover:text-red-400 transition-colors rounded-lg"
                     >
                       Quitar
                     </button>
@@ -226,54 +224,53 @@ export default function ProposalQueue({
 
               {/* Expanded result */}
               {expandedId === item.id && item.result && (
-                <div className="border-t border-surface-border p-4 space-y-4">
-                  {/* Analysis */}
-                  <div>
-                    <h3 className="text-sm font-medium text-text-secondary mb-2">
+                <div className="p-5 pt-0 space-y-4" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                  <div className="pt-5">
+                    <h3 className="section-title mb-3">
                       Analisis
                     </h3>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
-                        <span className="text-text-muted">Tipo:</span>{" "}
-                        <span className="text-text-primary">
+                        <span className="text-text-muted">Tipo</span>
+                        <p className="text-text-primary mt-0.5">
                           {item.result.analysis.project_type}
-                        </span>
+                        </p>
                       </div>
                       <div>
-                        <span className="text-text-muted">Complejidad:</span>{" "}
-                        <span className="text-text-primary">
+                        <span className="text-text-muted">Complejidad</span>
+                        <p className="text-text-primary mt-0.5">
                           {item.result.analysis.complexity}
-                        </span>
+                        </p>
                       </div>
                       <div>
-                        <span className="text-text-muted">Nivel cliente:</span>{" "}
-                        <span className="text-text-primary">
+                        <span className="text-text-muted">Nivel cliente</span>
+                        <p className="text-text-primary mt-0.5">
                           {item.result.analysis.client_technical_level}
-                        </span>
+                        </p>
                       </div>
                       <div>
-                        <span className="text-text-muted">Urgencia:</span>{" "}
-                        <span className="text-text-primary">
+                        <span className="text-text-muted">Urgencia</span>
+                        <p className="text-text-primary mt-0.5">
                           {item.result.analysis.urgency}
-                        </span>
+                        </p>
                       </div>
                       <div className="col-span-2">
-                        <span className="text-text-muted">Tecnologias:</span>{" "}
-                        <span className="text-text-primary">
+                        <span className="text-text-muted">Tecnologias</span>
+                        <p className="text-text-primary mt-0.5">
                           {item.result.analysis.technologies?.join(", ")}
-                        </span>
+                        </p>
                       </div>
                     </div>
                     {/* Suggested price */}
                     {item.result.analysis.suggested_price_min != null && (
-                      <div className="mt-3 p-3 bg-brand-mint/10 border border-brand-mint/30 rounded-lg">
+                      <div className="mt-4 p-4 rounded-xl" style={{ background: "rgba(0, 245, 160, 0.06)", border: "1px solid rgba(0, 245, 160, 0.1)" }}>
                         <span className="text-xs text-brand-mint font-medium">
                           Precio sugerido: $
                           {item.result.analysis.suggested_price_min} - $
                           {item.result.analysis.suggested_price_max} USD
                         </span>
                         {item.result.analysis.price_reasoning && (
-                          <p className="text-xs text-brand-mint/60 mt-1">
+                          <p className="text-xs text-brand-mint/50 mt-1">
                             {item.result.analysis.price_reasoning}
                           </p>
                         )}
@@ -283,30 +280,30 @@ export default function ProposalQueue({
 
                   {/* Response */}
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-text-secondary">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="section-title">
                         Respuesta generada
                       </h3>
                       <button
                         onClick={() =>
                           handleCopy(item.id, item.result!.response)
                         }
-                        className="px-3 py-1 text-xs bg-surface-card-hover hover:bg-text-dark border border-surface-border rounded-lg transition-colors"
+                        className="btn-secondary text-xs px-3 py-1.5"
                       >
                         {copiedId === item.id ? "Copiado!" : "Copiar"}
                       </button>
                     </div>
-                    <div className="bg-surface-dark rounded-lg p-4 whitespace-pre-wrap text-sm text-text-primary leading-relaxed">
+                    <div className="rounded-xl p-5 whitespace-pre-wrap text-sm text-text-secondary leading-relaxed" style={{ background: "rgba(255,255,255,0.03)" }}>
                       {item.result.response}
                     </div>
                   </div>
 
                   {/* Original proposal */}
                   <div>
-                    <h3 className="text-sm font-medium text-text-secondary mb-2">
+                    <h3 className="section-title mb-3">
                       Propuesta original
                     </h3>
-                    <div className="bg-surface-dark/50 rounded-lg p-3 text-xs text-text-muted max-h-32 overflow-y-auto">
+                    <div className="rounded-xl p-4 text-xs text-text-muted max-h-32 overflow-y-auto" style={{ background: "rgba(255,255,255,0.02)" }}>
                       {item.text}
                     </div>
                   </div>
@@ -315,8 +312,8 @@ export default function ProposalQueue({
 
               {/* Error message */}
               {item.status === "error" && item.error && (
-                <div className="border-t border-red-900 px-4 py-3">
-                  <p className="text-xs text-red-400">{item.error}</p>
+                <div className="px-5 py-3" style={{ borderTop: "1px solid rgba(239, 68, 68, 0.15)" }}>
+                  <p className="text-xs text-red-400/80">{item.error}</p>
                 </div>
               )}
             </div>
@@ -331,24 +328,28 @@ function StatusBadge({ status }: { status: QueueItem["status"] }) {
   const config = {
     pending: {
       label: "Pendiente",
-      cls: "bg-surface-border text-text-secondary",
+      style: { background: "rgba(255,255,255,0.06)", color: "#A0A0B8" },
+      cls: "",
     },
     processing: {
       label: "Procesando...",
-      cls: "bg-brand-mint/20 text-brand-mint animate-pulse",
+      style: { background: "rgba(0, 245, 160, 0.12)", color: "#00F5A0" },
+      cls: "animate-pulse",
     },
     done: {
       label: "Lista",
-      cls: "bg-brand-mint/10 text-brand-mint",
+      style: { background: "rgba(0, 245, 160, 0.08)", color: "#00F5A0" },
+      cls: "",
     },
     error: {
       label: "Error",
-      cls: "bg-red-900/30 text-red-400",
+      style: { background: "rgba(239, 68, 68, 0.12)", color: "#f87171" },
+      cls: "",
     },
   };
-  const { label, cls } = config[status];
+  const { label, style, cls } = config[status];
   return (
-    <span className={`px-2 py-0.5 text-xs rounded-full shrink-0 ${cls}`}>
+    <span className={`badge shrink-0 ${cls}`} style={style}>
       {label}
     </span>
   );

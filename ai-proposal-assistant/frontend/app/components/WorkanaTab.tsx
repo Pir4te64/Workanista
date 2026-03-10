@@ -20,43 +20,40 @@ interface Props {
 export default function WorkanaTab({ queue, onAdd, onRemove, onClearCompleted, onUpdateItem, onReorder, inputRef }: Props) {
   const [subTab, setSubTab] = useState<"new" | "history" | "analytics">("new");
 
+  const tabs = [
+    { key: "new" as const, label: "Nueva Propuesta" },
+    { key: "history" as const, label: "Historial" },
+    { key: "analytics" as const, label: "Analytics" },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex gap-1 border-b border-surface-border">
-        <button
-          onClick={() => setSubTab("new")}
-          className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-            subTab === "new"
-              ? "bg-surface-card text-text-primary border-b-2 border-brand-mint"
-              : "text-text-muted hover:text-text-primary"
-          }`}
-        >
-          Nueva Propuesta
-        </button>
-        <button
-          onClick={() => setSubTab("history")}
-          className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-            subTab === "history"
-              ? "bg-surface-card text-text-primary border-b-2 border-brand-mint"
-              : "text-text-muted hover:text-text-primary"
-          }`}
-        >
-          Historial
-        </button>
-        <button
-          onClick={() => setSubTab("analytics")}
-          className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-            subTab === "analytics"
-              ? "bg-surface-card text-text-primary border-b-2 border-brand-mint"
-              : "text-text-muted hover:text-text-primary"
-          }`}
-        >
-          Analytics
-        </button>
+      <div className="flex gap-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setSubTab(tab.key)}
+            className={`px-5 py-2.5 text-[13px] font-medium rounded-t-xl transition-all duration-200 ${
+              subTab === tab.key
+                ? "text-brand-mint"
+                : "text-text-muted hover:text-text-primary"
+            }`}
+            style={
+              subTab === tab.key
+                ? {
+                    background: "rgba(0, 245, 160, 0.06)",
+                    borderBottom: "2px solid #00F5A0",
+                  }
+                : { borderBottom: "2px solid transparent" }
+            }
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {subTab === "new" && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           <ProposalInput onAdd={onAdd} queueCount={queue.length} inputRef={inputRef} />
           <ProposalQueue
             items={queue}

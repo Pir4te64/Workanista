@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
-import { Roboto } from "next/font/google";
+import "@fontsource-variable/inter";
 import Providers from "./components/Providers";
 import "./globals.css";
-
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-});
 
 export const metadata: Metadata = {
   title: "ColdDuck",
@@ -20,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${roboto.className} bg-surface-black text-text-primary min-h-screen`} suppressHydrationWarning>
+      <body className="font-sans bg-surface-black text-text-primary min-h-screen antialiased" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -9,6 +9,7 @@ interface StatCard {
   label: string;
   value: string;
   color?: string;
+  sub?: string;
 }
 
 export default function DashboardSummary() {
@@ -74,19 +75,20 @@ export default function DashboardSummary() {
     {
       label: "Outreach",
       value: outreach ? String(outreach.length) : "\u2014",
+      sub: outreach && outreach.length > 0 ? "mensajes enviados" : undefined,
     },
   ];
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="bg-surface-card/60 backdrop-blur-xl border border-surface-border/50 rounded-2xl p-5 animate-pulse"
+            className="glass-card p-6 animate-pulse"
           >
-            <div className="h-3 w-20 bg-white/10 rounded mb-3" />
-            <div className="h-7 w-16 bg-white/10 rounded" />
+            <div className="h-3 w-20 rounded-md mb-4" style={{ background: "rgba(255,255,255,0.06)" }} />
+            <div className="h-8 w-16 rounded-md" style={{ background: "rgba(255,255,255,0.06)" }} />
           </div>
         ))}
       </div>
@@ -94,24 +96,28 @@ export default function DashboardSummary() {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
       {stats.map((stat, i) => (
         <motion.div
           key={stat.label}
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: i * 0.08 }}
-          className="bg-surface-card/60 backdrop-blur-xl border border-surface-border/50 rounded-2xl p-5 transition-shadow duration-300 hover:shadow-[0_0_15px_rgba(0,245,160,0.1)]"
+          transition={{ duration: 0.5, delay: i * 0.08, ease: [0.21, 0.47, 0.32, 0.98] }}
+          className="glass-card p-6 transition-all duration-300 hover:shadow-card-hover group"
+          style={{ borderColor: "rgba(255,255,255,0.06)" }}
         >
-          <p className="text-xs text-white/50 uppercase tracking-wider mb-1">
+          <p className="section-title mb-3">
             {stat.label}
           </p>
           <p
-            className="text-2xl font-semibold"
-            style={stat.color ? { color: stat.color } : undefined}
+            className="text-3xl font-semibold tracking-tight"
+            style={stat.color ? { color: stat.color } : { color: "#E8E8F0" }}
           >
             {stat.value}
           </p>
+          {stat.sub && (
+            <p className="text-xs text-text-muted mt-2">{stat.sub}</p>
+          )}
         </motion.div>
       ))}
     </div>
