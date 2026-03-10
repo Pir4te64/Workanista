@@ -418,6 +418,11 @@ async def coldduck_delete_message(message_id: str):
 # ==================== Budget / Proposal Generator ====================
 
 
+class BudgetSaveRequest(BaseModel):
+    data: dict
+    budget_id: Optional[str] = None  # If provided, update existing
+
+
 class BudgetGenerateRequest(BaseModel):
     raw_text: str
     currency: str = "USD"
@@ -494,6 +499,81 @@ Responde UNICAMENTE con un JSON valido (sin markdown, sin comentarios) con esta 
 
     except Exception as e:
         logger.error(f"Budget generate error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Budget CRUD ====================
+
+
+@app.post("/budgets")
+async def save_budget(request: BudgetSaveRequest):
+    """Save or update a budget document."""
+    try:
+        budget_data = request.data
+        row = {
+            "client_name": budget_data.get("clientName", ""),
+            "project_name": budget_data.get("projectName", ""),
+            "data": budget_data,
+        }
+
+        if request.budget_id:
+            result = (
+                db.client.table("budgets")
+                .update(row)
+                .eq("id", request.budget_id)
+                .execute()
+            )
+        else:
+            result = db.client.table("budgets").insert(row).execute()
+
+        saved = result.data[0] if result.data else {}
+        return {"status": "ok", "budget": saved}
+    except Exception as e:
+        logger.error(f"Budget save error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/budgets")
+async def list_budgets():
+    """List all saved budgets (summary only)."""
+    try:
+        result = (
+            db.client.table("budgets")
+            .select("id, client_name, project_name, created_at, updated_at")
+            .order("updated_at", desc=True)
+            .execute()
+        )
+        return {"budgets": result.data}
+    except Exception as e:
+        logger.error(f"Budget list error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/budgets/{budget_id}")
+async def get_budget(budget_id: str):
+    """Get a single budget with full data."""
+    try:
+        result = (
+            db.client.table("budgets")
+            .select("*")
+            .eq("id", budget_id)
+            .single()
+            .execute()
+        )
+        return {"budget": result.data}
+    except Exception as e:
+        logger.error(f"Budget get error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/budgets/{budget_id}")
+async def delete_budget(budget_id: str):
+    """Delete a budget."""
+    try:
+        db.client.table("budgets").delete().eq("id", budget_id).execute()
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Budget delete error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

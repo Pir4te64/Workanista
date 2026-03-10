@@ -109,3 +109,55 @@ export async function updatePrice(
   });
   if (!res.ok) throw new Error("Error al actualizar precio");
 }
+
+// ── Budgets ──
+
+export interface BudgetSummary {
+  id: string;
+  client_name: string;
+  project_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BudgetFull {
+  id: string;
+  client_name: string;
+  project_name: string;
+  data: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function saveBudget(
+  data: Record<string, unknown>,
+  budgetId?: string
+): Promise<BudgetFull> {
+  const res = await fetch(`${API_BASE}/budgets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data, budget_id: budgetId || null }),
+  });
+  if (!res.ok) throw new Error("Error al guardar presupuesto");
+  const json = await res.json();
+  return json.budget;
+}
+
+export async function listBudgets(): Promise<BudgetSummary[]> {
+  const res = await fetch(`${API_BASE}/budgets`);
+  if (!res.ok) throw new Error("Error al obtener presupuestos");
+  const json = await res.json();
+  return json.budgets;
+}
+
+export async function getBudget(budgetId: string): Promise<BudgetFull> {
+  const res = await fetch(`${API_BASE}/budgets/${budgetId}`);
+  if (!res.ok) throw new Error("Error al obtener presupuesto");
+  const json = await res.json();
+  return json.budget;
+}
+
+export async function deleteBudget(budgetId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/budgets/${budgetId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Error al eliminar presupuesto");
+}

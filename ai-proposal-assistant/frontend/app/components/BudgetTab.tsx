@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "./Toast";
+import { saveBudget, listBudgets, getBudget, deleteBudget } from "@/lib/api";
+import type { BudgetSummary } from "@/lib/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -629,6 +631,110 @@ export default function BudgetTab() {
   const [rawText, setRawText] = useState("");
   const [showAiPanel, setShowAiPanel] = useState(false);
 
+  // ─── Saved budgets ───
+  const [savedBudgets, setSavedBudgets] = useState<BudgetSummary[]>([]);
+  const [currentBudgetId, setCurrentBudgetId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+  const [loadingBudget, setLoadingBudget] = useState(false);
+
+  const fetchBudgets = useCallback(async () => {
+    try {
+      const list = await listBudgets();
+      setSavedBudgets(list);
+    } catch {
+      // silent
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBudgets();
+  }, [fetchBudgets]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const saved = await saveBudget(data as unknown as Record<string, unknown>, currentBudgetId || undefined);
+      setCurrentBudgetId(saved.id);
+      addToast("success", currentBudgetId ? "Presupuesto actualizado" : "Presupuesto guardado");
+      fetchBudgets();
+    } catch {
+      addToast("error", "Error al guardar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLoad = async (id: string) => {
+    setLoadingBudget(true);
+    try {
+      const budget = await getBudget(id);
+      const d = budget.data as Record<string, unknown>;
+      setData({
+        clientName: (d.clientName as string) || "",
+        clientEmail: (d.clientEmail as string) || "",
+        projectName: (d.projectName as string) || "",
+        documentType: (d.documentType as string) || "Hoja de Ruta del Proyecto",
+        date: (d.date as string) || today,
+        currency: (d.currency as string) || "USD",
+        phases: ((d.phases as Phase[]) || []).length > 0
+          ? (d.phases as Phase[])
+          : [emptyPhase()],
+        deliverables: ((d.deliverables as Deliverable[]) || []).length > 0
+          ? (d.deliverables as Deliverable[])
+          : [emptyDeliverable()],
+        budgetIntro: (d.budgetIntro as string) || "",
+        budgetItems: ((d.budgetItems as BudgetItem[]) || []).length > 0
+          ? (d.budgetItems as BudgetItem[])
+          : [emptyBudgetItem()],
+        totalLabel: (d.totalLabel as string) || "INVERSION TOTAL DEL PROYECTO",
+        totalValue: (d.totalValue as string) || "",
+        costNote: (d.costNote as string) || "",
+        paymentTerms: (d.paymentTerms as string) || "",
+      });
+      setCurrentBudgetId(id);
+      setShowSaved(false);
+      addToast("success", "Presupuesto cargado");
+    } catch {
+      addToast("error", "Error al cargar presupuesto");
+    } finally {
+      setLoadingBudget(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteBudget(id);
+      if (currentBudgetId === id) setCurrentBudgetId(null);
+      addToast("success", "Presupuesto eliminado");
+      fetchBudgets();
+    } catch {
+      addToast("error", "Error al eliminar");
+    }
+  };
+
+  const handleNew = () => {
+    setCurrentBudgetId(null);
+    setData({
+      clientName: "",
+      clientEmail: "",
+      projectName: "",
+      documentType: "Hoja de Ruta del Proyecto",
+      date: today,
+      currency: "USD",
+      phases: [emptyPhase()],
+      deliverables: [emptyDeliverable()],
+      budgetIntro: "El proyecto se ha cotizado en base a un esquema de dedicacion exclusiva mensual de 160 horas por mes.",
+      budgetItems: [emptyBudgetItem()],
+      totalLabel: "INVERSION TOTAL DEL PROYECTO",
+      totalValue: "",
+      costNote: "",
+      paymentTerms: "50% al inicio del proyecto, 50% al finalizar.",
+    });
+    setShowSaved(false);
+    addToast("info", "Nuevo presupuesto");
+  };
+
   const canGenerate = data.clientName.trim() && data.projectName.trim();
 
   const handleGenerate = async () => {
@@ -716,19 +822,90 @@ export default function BudgetTab() {
           <h2 className="text-2xl font-semibold text-text-primary tracking-tight">Presupuestos</h2>
           <p className="text-sm text-text-muted mt-1">
             Arma propuestas profesionales y descargalas en PDF
+            {currentBudgetId && (
+              <span className="ml-2 text-brand-mint text-[10px] font-semibold uppercase">guardado</span>
+            )}
           </p>
         </div>
-        <button
-          onClick={() => setShowAiPanel(!showAiPanel)}
-          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
-            showAiPanel
-              ? "bg-brand-mint text-text-dark"
-              : "bg-brand-mint/15 text-brand-mint hover:bg-brand-mint/25"
-          }`}
-        >
-          {showAiPanel ? "Cerrar IA" : "Generar con IA"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setShowSaved(!showSaved); setShowAiPanel(false); }}
+            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
+              showSaved
+                ? "bg-white/10 text-text-primary"
+                : "bg-white/5 text-text-muted hover:bg-white/10 hover:text-text-primary"
+            }`}
+          >
+            Guardados {savedBudgets.length > 0 && `(${savedBudgets.length})`}
+          </button>
+          <button
+            onClick={() => { setShowAiPanel(!showAiPanel); setShowSaved(false); }}
+            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
+              showAiPanel
+                ? "bg-brand-mint text-text-dark"
+                : "bg-brand-mint/15 text-brand-mint hover:bg-brand-mint/25"
+            }`}
+          >
+            {showAiPanel ? "Cerrar IA" : "Generar con IA"}
+          </button>
+        </div>
       </div>
+
+      {/* ─── Saved Budgets Panel ─── */}
+      {showSaved && (
+        <div className="glass-card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+              Presupuestos guardados
+            </p>
+            <button
+              onClick={handleNew}
+              className="px-3 py-1.5 text-xs font-semibold bg-brand-mint/15 text-brand-mint hover:bg-brand-mint/25 rounded-lg transition-colors"
+            >
+              + Nuevo
+            </button>
+          </div>
+          {savedBudgets.length === 0 ? (
+            <p className="text-sm text-text-muted py-4 text-center">No hay presupuestos guardados todavia</p>
+          ) : (
+            <div className="space-y-2 max-h-72 overflow-y-auto">
+              {savedBudgets.map((b) => (
+                <div
+                  key={b.id}
+                  className={`flex items-center justify-between p-3 rounded-lg transition-colors cursor-pointer ${
+                    currentBudgetId === b.id
+                      ? "bg-brand-mint/10 border border-brand-mint/20"
+                      : "bg-white/[0.03] hover:bg-white/[0.06] border border-transparent"
+                  }`}
+                  onClick={() => handleLoad(b.id)}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-text-primary truncate">
+                      {b.project_name || "Sin nombre"}
+                    </p>
+                    <p className="text-xs text-text-muted truncate">
+                      {b.client_name || "Sin cliente"} · {new Date(b.updated_at).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(b.id); }}
+                    className="ml-3 p-1.5 text-text-muted hover:text-red-400 transition-colors rounded"
+                    title="Eliminar"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3,6 5,6 21,6" />
+                      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {loadingBudget && (
+            <p className="text-xs text-text-muted mt-3 text-center">Cargando...</p>
+          )}
+        </div>
+      )}
 
       {/* ─── AI Panel ─── */}
       {showAiPanel && (
@@ -948,13 +1125,22 @@ export default function BudgetTab() {
         >
           Limpiar formulario
         </button>
-        <button
-          onClick={handleGenerate}
-          disabled={!canGenerate || generating}
-          className="px-6 py-2.5 bg-brand-mint hover:bg-brand-mint-dark disabled:bg-surface-border disabled:text-text-muted text-text-dark font-semibold rounded-lg transition-colors"
-        >
-          {generating ? "Generando..." : "Descargar PDF"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSave}
+            disabled={saving || !data.projectName.trim()}
+            className="px-5 py-2.5 bg-white/5 hover:bg-white/10 disabled:bg-surface-border disabled:text-text-muted text-text-primary font-semibold rounded-lg transition-colors border border-white/10"
+          >
+            {saving ? "Guardando..." : currentBudgetId ? "Actualizar" : "Guardar"}
+          </button>
+          <button
+            onClick={handleGenerate}
+            disabled={!canGenerate || generating}
+            className="px-6 py-2.5 bg-brand-mint hover:bg-brand-mint-dark disabled:bg-surface-border disabled:text-text-muted text-text-dark font-semibold rounded-lg transition-colors"
+          >
+            {generating ? "Generando..." : "Descargar PDF"}
+          </button>
+        </div>
       </div>
     </div>
   );
