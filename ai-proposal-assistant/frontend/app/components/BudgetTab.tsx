@@ -473,9 +473,11 @@ async function generateProposalPDF(data: ProposalData, addToast: (type: "success
   }
 
   // ─── Footer on all pages ───
-  const totalPages = doc.getNumberOfPages();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const totalPages = (doc as any).getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
-    doc.setPage(p);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (doc as any).setPage(p);
     addPageFooter();
     if (p > 1) addPageHeader();
   }
