@@ -415,6 +415,88 @@ async def coldduck_delete_message(message_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== Budget / Proposal Generator ====================
+
+
+class BudgetGenerateRequest(BaseModel):
+    raw_text: str
+    currency: str = "USD"
+
+
+@app.post("/budget/generate")
+async def budget_generate(request: BudgetGenerateRequest):
+    """Takes raw client text and structures it into a proposal, without inventing anything."""
+    from openai import AsyncOpenAI
+    from config import OPENAI_API_KEY, MODEL_NAME
+    import json as _json
+
+    client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+
+    system_prompt = """Sos un asistente que estructura propuestas tecnicas para CruzNegraDev LLC.
+
+REGLA CRITICA: NO INVENTES NADA. Solo organiza y da formato a la informacion que el usuario te proporciona.
+- Si el texto del cliente menciona fases, respeta esas fases exactamente.
+- Si menciona tecnologias, usalas tal cual. NO agregues tecnologias que no estan en el texto.
+- Si menciona precios, horas o tarifas, usalos exactamente. NO inventes precios.
+- Si algo no esta en el texto (por ejemplo no hay entregables), deja ese campo como array vacio.
+- Si el texto es ambiguo, usa exactamente las palabras del cliente.
+- Firma siempre como: Victor Manuel Moreira - CruzNegraDev LLC
+
+Responde UNICAMENTE con un JSON valido (sin markdown, sin comentarios) con esta estructura:
+{
+  "clientName": "nombre del cliente si aparece en el texto, sino vacio",
+  "clientEmail": "email si aparece, sino vacio",
+  "projectName": "nombre del proyecto extraido del texto",
+  "documentType": "Hoja de Ruta del Proyecto",
+  "phases": [
+    {
+      "name": "FASE 1 — nombre de la fase",
+      "subtitle": "Duracion y tecnologias mencionadas",
+      "objective": "objetivo de la fase tal como lo describe el cliente",
+      "sections": [
+        {
+          "title": "Titulo de la seccion",
+          "bullets": ["punto 1 tal cual del texto", "punto 2"]
+        }
+      ]
+    }
+  ],
+  "deliverables": ["entregable 1", "entregable 2"],
+  "budgetIntro": "texto introductorio del presupuesto basado en lo que dice el cliente",
+  "budgetItems": [
+    {
+      "concept": "concepto",
+      "hours": "160 hrs",
+      "rate": "$17.00/hr",
+      "subtotal": "$2,720.00 USD"
+    }
+  ],
+  "totalLabel": "INVERSION TOTAL DEL PROYECTO",
+  "totalValue": "monto total si se menciona",
+  "costNote": "nota aclaratoria si es relevante",
+  "paymentTerms": "condiciones de pago si se mencionan"
+}"""
+
+    try:
+        response = await client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Estructura esta propuesta en formato JSON. Moneda: {request.currency}.\n\nTexto del cliente:\n{request.raw_text}"},
+            ],
+            temperature=0.1,
+            response_format={"type": "json_object"},
+        )
+
+        content = response.choices[0].message.content or "{}"
+        result = _json.loads(content)
+        return result
+
+    except Exception as e:
+        logger.error(f"Budget generate error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

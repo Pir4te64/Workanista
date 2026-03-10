@@ -10,7 +10,7 @@ services:
       - SUPABASE_KEY=${SUPABASE_KEY}
       - MODEL_NAME=${MODEL_NAME:-gpt-4o}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-small}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://69.62.102.192:3010,http://localhost:3010,http://localhost:3000}
       - RAPIDAPI_KEY=${RAPIDAPI_KEY}
       - HEYGEN_API_KEY=${HEYGEN_API_KEY}
     restart: unless-stopped
@@ -19,7 +19,7 @@ services:
     build:
       context: ./ai-proposal-assistant/frontend
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://69.62.102.192:8000}
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     container_name: proposal-frontend

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import WorkanaTab from "./components/WorkanaTab";
 import ColdDuckTab from "./components/coldduck/ColdDuckTab";
 import DuckIcon from "./components/coldduck/DuckIcon";
+import BudgetTab from "./components/BudgetTab";
 import DashboardSummary from "./components/DashboardSummary";
 import { FadeIn } from "./components/AnimatedList";
 import { useToast } from "./components/Toast";
@@ -50,6 +51,18 @@ function IconSend({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+function IconDocument({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <polyline points="14,2 14,8 20,8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <line x1="10" y1="9" x2="8" y2="9" />
+    </svg>
+  );
+}
+
 function IconCollapse({ collapsed, className = "w-5 h-5" }: { collapsed: boolean; className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -76,6 +89,7 @@ const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", icon: "dashboard" },
   { key: "workana", label: "Workana", icon: "briefcase" },
   { key: "linkedin", label: "ColdDuck", icon: "send" },
+  { key: "budgets", label: "Presupuestos", icon: "document" },
 ] as const;
 
 type TabKey = (typeof NAV_ITEMS)[number]["key"];
@@ -171,6 +185,7 @@ export default function Home() {
               {item.icon === "dashboard" && <IconDashboard />}
               {item.icon === "briefcase" && <IconBriefcase />}
               {item.icon === "send" && <IconSend />}
+              {item.icon === "document" && <IconDocument />}
               {!sidebarCollapsed && (
                 <span className="text-[13px]">{item.label}</span>
               )}
@@ -240,7 +255,7 @@ export default function Home() {
                 {/* Quick actions */}
                 <div>
                   <p className="section-title mb-4">Acciones rapidas</p>
-                  <div className="grid grid-cols-2 gap-5">
+                  <div className="grid grid-cols-3 gap-5">
                     <button
                       onClick={() => setActiveTab("workana")}
                       className="glass-card-hover p-7 text-left group"
@@ -269,6 +284,20 @@ export default function Home() {
                         Genera mensajes personalizados en LinkedIn
                       </p>
                     </button>
+                    <button
+                      onClick={() => setActiveTab("budgets")}
+                      className="glass-card-hover p-7 text-left group"
+                    >
+                      <div className="mb-4 text-text-muted group-hover:text-brand-mint transition-colors duration-300">
+                        <IconDocument className="w-8 h-8" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-text-primary group-hover:text-brand-mint transition-colors duration-300">
+                        Presupuestos
+                      </h3>
+                      <p className="text-xs text-text-muted mt-1.5 leading-relaxed">
+                        Arma presupuestos profesionales en PDF
+                      </p>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -292,6 +321,12 @@ export default function Home() {
           {activeTab === "linkedin" && (
             <FadeIn>
               <ColdDuckTab />
+            </FadeIn>
+          )}
+
+          {activeTab === "budgets" && (
+            <FadeIn>
+              <BudgetTab />
             </FadeIn>
           )}
         </div>
