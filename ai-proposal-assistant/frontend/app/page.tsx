@@ -7,6 +7,7 @@ import WorkanaTab from "./components/WorkanaTab";
 import ColdDuckTab from "./components/coldduck/ColdDuckTab";
 import DuckIcon from "./components/coldduck/DuckIcon";
 import BudgetTab from "./components/BudgetTab";
+import InvoiceTab from "./components/InvoiceTab";
 import DashboardSummary from "./components/DashboardSummary";
 import { FadeIn } from "./components/AnimatedList";
 import { useToast } from "./components/Toast";
@@ -63,6 +64,16 @@ function IconDocument({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+function IconInvoice({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 3 2V2l-3 2-3-2-3 2-3-2-3 2-3-2z" />
+      <path d="M8 10h8" />
+      <path d="M8 14h4" />
+    </svg>
+  );
+}
+
 function IconCollapse({ collapsed, className = "w-5 h-5" }: { collapsed: boolean; className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -90,6 +101,7 @@ const NAV_ITEMS = [
   { key: "workana", label: "Workana", icon: "briefcase" },
   { key: "linkedin", label: "ColdDuck", icon: "send" },
   { key: "budgets", label: "Presupuestos", icon: "document" },
+  { key: "invoice", label: "Invoice", icon: "invoice" },
 ] as const;
 
 type TabKey = (typeof NAV_ITEMS)[number]["key"];
@@ -186,6 +198,7 @@ export default function Home() {
               {item.icon === "briefcase" && <IconBriefcase />}
               {item.icon === "send" && <IconSend />}
               {item.icon === "document" && <IconDocument />}
+              {item.icon === "invoice" && <IconInvoice />}
               {!sidebarCollapsed && (
                 <span className="text-[13px]">{item.label}</span>
               )}
@@ -255,7 +268,7 @@ export default function Home() {
                 {/* Quick actions */}
                 <div>
                   <p className="section-title mb-4">Acciones rapidas</p>
-                  <div className="grid grid-cols-3 gap-5">
+                  <div className="grid grid-cols-4 gap-5">
                     <button
                       onClick={() => setActiveTab("workana")}
                       className="glass-card-hover p-7 text-left group"
@@ -298,6 +311,20 @@ export default function Home() {
                         Arma presupuestos profesionales en PDF
                       </p>
                     </button>
+                    <button
+                      onClick={() => setActiveTab("invoice")}
+                      className="glass-card-hover p-7 text-left group"
+                    >
+                      <div className="mb-4 text-text-muted group-hover:text-brand-mint transition-colors duration-300">
+                        <IconInvoice className="w-8 h-8" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-text-primary group-hover:text-brand-mint transition-colors duration-300">
+                        Invoice
+                      </h3>
+                      <p className="text-xs text-text-muted mt-1.5 leading-relaxed">
+                        Genera invoices profesionales en PDF
+                      </p>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -327,6 +354,12 @@ export default function Home() {
           {activeTab === "budgets" && (
             <FadeIn>
               <BudgetTab />
+            </FadeIn>
+          )}
+
+          {activeTab === "invoice" && (
+            <FadeIn>
+              <InvoiceTab />
             </FadeIn>
           )}
         </div>

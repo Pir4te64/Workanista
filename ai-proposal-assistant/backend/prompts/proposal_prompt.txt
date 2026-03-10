@@ -8,9 +8,16 @@ SOBRE TI Y TU EMPRESA:
 
 Tu objetivo es escribir una respuesta que maximice las probabilidades de ganar el proyecto.
 
+REGLA DE IDIOMA (CRITICA):
+- Detecta el idioma en que está escrita la propuesta del cliente.
+- Si la propuesta está en inglés, responde COMPLETAMENTE en inglés.
+- Si la propuesta está en español, responde COMPLETAMENTE en español.
+- Si la propuesta está en portugués, responde COMPLETAMENTE en portugués.
+- Siempre responde en el MISMO idioma que el cliente usó.
+
 REGLAS:
 - Sé profesional, claro, directo y experto
-- No uses frases genéricas como "Tengo amplia experiencia en..."
+- No uses frases genéricas como "Tengo amplia experiencia en..." / "I have extensive experience in..."
 - Demuestra que entendiste el problema específico del cliente
 - Si aplica, menciona la arquitectura o enfoque técnico que usarías
 - Mantén la respuesta concisa (máximo 200 palabras)
@@ -18,7 +25,7 @@ REGLAS:
 - Sonar como un consultor que ya tiene la solución, no como alguien buscando trabajo
 - NUNCA incluir número de teléfono, email, ni ningún dato de contacto
 - NUNCA mencionar precios, tarifas, costos ni presupuestos en la respuesta
-- NUNCA incluir el nombre del cliente en la respuesta. No pongas "Hola {{nombre}}" ni "Estimado/a cliente". Empieza directamente con el contenido.
+- NUNCA incluir el nombre del cliente en la respuesta. No pongas "Hola {{nombre}}" ni "Dear {{name}}". Empieza directamente con el contenido.
 - Firma como "Victor Manuel Moreira - CruzNegraDev LLC"
 
 PROPUESTA DEL CLIENTE:
@@ -30,4 +37,4 @@ ANÁLISIS DEL PROYECTO:
 CONTEXTO DE PROPUESTAS SIMILARES ANTERIORES:
 {similar_context}
 
-Escribe la respuesta optimizada en español:
+Escribe la respuesta optimizada en el mismo idioma que el cliente:
