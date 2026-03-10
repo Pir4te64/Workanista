@@ -656,7 +656,7 @@ export default function BudgetTab() {
     try {
       const saved = await saveBudget(data as unknown as Record<string, unknown>, currentBudgetId || undefined);
       setCurrentBudgetId(saved.id);
-      addToast("success", currentBudgetId ? "Presupuesto actualizado" : "Presupuesto guardado");
+      addToast("success", currentBudgetId ? "Presupuesto actualizado" : "Presupuesto guardado al historial");
       fetchBudgets();
     } catch {
       addToast("error", "Error al guardar");
@@ -737,10 +737,22 @@ export default function BudgetTab() {
 
   const canGenerate = data.clientName.trim() && data.projectName.trim();
 
+  const autoSave = async (d: ProposalData) => {
+    if (!d.projectName.trim()) return;
+    try {
+      const saved = await saveBudget(d as unknown as Record<string, unknown>, currentBudgetId || undefined);
+      setCurrentBudgetId(saved.id);
+      fetchBudgets();
+    } catch {
+      // silent - don't block the main action
+    }
+  };
+
   const handleGenerate = async () => {
     setGenerating(true);
     try {
       await generateProposalPDF(data, addToast);
+      await autoSave(data);
     } catch (err) {
       console.error("PDF generation error:", err);
       addToast("error", "Error al generar el PDF");
@@ -803,6 +815,15 @@ export default function BudgetTab() {
 
       addToast("success", "Propuesta estructurada con IA");
       setShowAiPanel(false);
+
+      // Auto-save to history
+      if (result.projectName) {
+        try {
+          const saved = await saveBudget(result as Record<string, unknown>, currentBudgetId || undefined);
+          setCurrentBudgetId(saved.id);
+          fetchBudgets();
+        } catch { /* silent */ }
+      }
     } catch {
       addToast("error", "Error al generar con IA");
     } finally {
@@ -823,7 +844,7 @@ export default function BudgetTab() {
           <p className="text-sm text-text-muted mt-1">
             Arma propuestas profesionales y descargalas en PDF
             {currentBudgetId && (
-              <span className="ml-2 text-brand-mint text-[10px] font-semibold uppercase">guardado</span>
+              <span className="ml-2 text-brand-mint text-[10px] font-semibold uppercase">en historial</span>
             )}
           </p>
         </div>
@@ -836,7 +857,7 @@ export default function BudgetTab() {
                 : "bg-white/5 text-text-muted hover:bg-white/10 hover:text-text-primary"
             }`}
           >
-            Guardados {savedBudgets.length > 0 && `(${savedBudgets.length})`}
+            Historial {savedBudgets.length > 0 && `(${savedBudgets.length})`}
           </button>
           <button
             onClick={() => { setShowAiPanel(!showAiPanel); setShowSaved(false); }}
@@ -856,7 +877,7 @@ export default function BudgetTab() {
         <div className="glass-card p-6">
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-              Presupuestos guardados
+              Historial de presupuestos
             </p>
             <button
               onClick={handleNew}
@@ -866,7 +887,7 @@ export default function BudgetTab() {
             </button>
           </div>
           {savedBudgets.length === 0 ? (
-            <p className="text-sm text-text-muted py-4 text-center">No hay presupuestos guardados todavia</p>
+            <p className="text-sm text-text-muted py-4 text-center">No hay presupuestos en el historial todavia</p>
           ) : (
             <div className="space-y-2 max-h-72 overflow-y-auto">
               {savedBudgets.map((b) => (
@@ -1126,13 +1147,6 @@ export default function BudgetTab() {
           Limpiar formulario
         </button>
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleSave}
-            disabled={saving || !data.projectName.trim()}
-            className="px-5 py-2.5 bg-white/5 hover:bg-white/10 disabled:bg-surface-border disabled:text-text-muted text-text-primary font-semibold rounded-lg transition-colors border border-white/10"
-          >
-            {saving ? "Guardando..." : currentBudgetId ? "Actualizar" : "Guardar"}
-          </button>
           <button
             onClick={handleGenerate}
             disabled={!canGenerate || generating}
