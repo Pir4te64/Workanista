@@ -13,3 +13,8 @@ EMBEDDING_DIMENSIONS = 1536
 # ColdDuck module
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")
 HEYGEN_API_KEY = os.getenv("HEYGEN_API_KEY", "")
+
+# Google Calendar
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/google/callback")

@@ -8,6 +8,7 @@ import ColdDuckTab from "./components/coldduck/ColdDuckTab";
 import DuckIcon from "./components/coldduck/DuckIcon";
 import BudgetTab from "./components/BudgetTab";
 import InvoiceTab from "./components/InvoiceTab";
+import CalendarTab from "./components/CalendarTab";
 import DashboardSummary from "./components/DashboardSummary";
 import { FadeIn } from "./components/AnimatedList";
 import { useToast } from "./components/Toast";
@@ -64,6 +65,19 @@ function IconDocument({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+function IconCalendar({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+      <rect x="8" y="14" width="2" height="2" rx="0.5" />
+      <rect x="14" y="14" width="2" height="2" rx="0.5" />
+    </svg>
+  );
+}
+
 function IconInvoice({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -102,6 +116,7 @@ const NAV_ITEMS = [
   { key: "linkedin", label: "ColdDuck", icon: "send" },
   { key: "budgets", label: "Presupuestos", icon: "document" },
   { key: "invoice", label: "Invoice", icon: "invoice" },
+  { key: "calendar", label: "Calendario", icon: "calendar" },
 ] as const;
 
 type TabKey = (typeof NAV_ITEMS)[number]["key"];
@@ -199,6 +214,7 @@ export default function Home() {
               {item.icon === "send" && <IconSend />}
               {item.icon === "document" && <IconDocument />}
               {item.icon === "invoice" && <IconInvoice />}
+              {item.icon === "calendar" && <IconCalendar />}
               {!sidebarCollapsed && (
                 <span className="text-[13px]">{item.label}</span>
               )}
@@ -360,6 +376,12 @@ export default function Home() {
           {activeTab === "invoice" && (
             <FadeIn>
               <InvoiceTab />
+            </FadeIn>
+          )}
+
+          {activeTab === "calendar" && (
+            <FadeIn>
+              <CalendarTab />
             </FadeIn>
           )}
         </div>
