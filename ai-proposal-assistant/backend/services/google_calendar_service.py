@@ -7,10 +7,11 @@ for scheduling and availability features.
 
 from datetime import datetime, timezone
 from typing import Optional
+from urllib.parse import urlencode
 
+import requests as http_requests
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -46,62 +47,46 @@ class GoogleCalendarService:
     # ------------------------------------------------------------------ #
 
     def get_auth_url(self, user_email: str) -> str:
-        """
-        Generate the Google OAuth2 authorization URL.
-
-        Args:
-            user_email: The email of the user initiating the OAuth flow.
-                        Passed as the ``state`` parameter so it survives the redirect.
-
-        Returns:
-            The authorization URL the user should be redirected to.
-        """
-        try:
-            flow = Flow.from_client_config(
-                self._client_config,
-                scopes=SCOPES,
-                redirect_uri=GOOGLE_REDIRECT_URI,
-            )
-            auth_url, _ = flow.authorization_url(
-                access_type="offline",
-                include_granted_scopes="true",
-                prompt="consent",
-                state=user_email,
-            )
-            logger.info("Generated OAuth URL for user %s", user_email)
-            return auth_url
-        except Exception:
-            logger.exception("Failed to generate OAuth URL for %s", user_email)
-            raise
+        """Generate the Google OAuth2 authorization URL (no PKCE)."""
+        params = urlencode({
+            "client_id": GOOGLE_CLIENT_ID,
+            "redirect_uri": GOOGLE_REDIRECT_URI,
+            "response_type": "code",
+            "scope": " ".join(SCOPES),
+            "access_type": "offline",
+            "prompt": "consent",
+            "state": user_email,
+        })
+        url = f"https://accounts.google.com/o/oauth2/auth?{params}"
+        logger.info("Generated OAuth URL for user %s", user_email)
+        return url
 
     def handle_callback(self, code: str, user_email: str) -> bool:
-        """
-        Exchange the authorization code for tokens and persist them.
-
-        Args:
-            code: The authorization code returned by Google.
-            user_email: The user's email address.
-
-        Returns:
-            True on success.
-
-        Raises:
-            Exception: If the token exchange or storage fails.
-        """
+        """Exchange the authorization code for tokens via direct HTTP POST."""
         try:
-            flow = Flow.from_client_config(
-                self._client_config,
-                scopes=SCOPES,
-                redirect_uri=GOOGLE_REDIRECT_URI,
+            resp = http_requests.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": code,
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": GOOGLE_REDIRECT_URI,
+                    "grant_type": "authorization_code",
+                },
             )
-            flow.fetch_token(code=code)
-            credentials = flow.credentials
+            resp.raise_for_status()
+            tokens = resp.json()
+
+            expiry = None
+            if "expires_in" in tokens:
+                from datetime import timedelta
+                expiry = datetime.now(timezone.utc) + timedelta(seconds=tokens["expires_in"])
 
             self._store_tokens(
                 user_email=user_email,
-                access_token=credentials.token,
-                refresh_token=credentials.refresh_token,
-                token_expiry=credentials.expiry,
+                access_token=tokens["access_token"],
+                refresh_token=tokens.get("refresh_token"),
+                token_expiry=expiry,
             )
 
             logger.info("OAuth callback handled successfully for %s", user_email)
