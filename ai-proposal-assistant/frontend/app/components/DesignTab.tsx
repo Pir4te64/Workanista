@@ -689,55 +689,43 @@ function DesignTabInner() {
   const btnStyle: React.CSSProperties = { background: "rgba(255,255,255,0.92)", border: "1px solid rgba(0,0,0,0.1)", color: "#444", borderRadius: 8 };
 
   return (
-    <div className="space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-text-primary tracking-tight">Diagramas</h2>
-          <p className="text-sm text-text-muted mt-0.5">Mapa de pantallas con IA — click derecho en nodos para opciones</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowList(!showList)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-text-muted hover:text-text-primary"
-            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <IconList className="w-3.5 h-3.5" />
-            {diagrams.length} guardados
-          </button>
-          <button onClick={handleNew}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-text-muted hover:text-text-primary"
-            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <IconPlus className="w-3.5 h-3.5" /> Nuevo
-          </button>
-        </div>
+    <div className="space-y-2">
+      {/* Compact toolbar: title + prompt + actions all in one row */}
+      <div className="glass-card px-3 py-2 flex items-center gap-2">
+        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+          placeholder="Nombre" className="input-premium w-36 text-sm py-1" />
+        <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)}
+          placeholder="Describe la app... Ej: 'E-commerce con login, productos, carrito'"
+          className="input-premium flex-1 text-sm py-1"
+          onKeyDown={(e) => { if (e.key === "Enter") handleGenerate(); }} />
+        {scrumProjects.length > 0 && (
+          <select className="input-premium w-auto text-xs py-1" defaultValue=""
+            onChange={(e) => { const p = scrumProjects.find((x) => x.id === e.target.value); if (p) handleLoadFromScrum(p); }}>
+            <option value="" disabled>Proyecto...</option>
+            {scrumProjects.map((p) => <option key={p.id} value={p.id}>{p.project_name}</option>)}
+          </select>
+        )}
+        <button onClick={handleGenerate} disabled={generating || !prompt.trim()}
+          className="btn-primary shrink-0 flex items-center gap-1.5 text-sm py-1.5 px-3">
+          {generating ? <IconLoader className="w-4 h-4" /> : <IconSpark className="w-4 h-4" />}
+          Generar
+        </button>
+        <div className="w-px h-6 bg-white/10 shrink-0" />
+        <button onClick={() => setShowList(!showList)}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all text-text-muted hover:text-text-primary shrink-0"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <IconList className="w-3.5 h-3.5" />
+          {diagrams.length}
+        </button>
+        <button onClick={handleNew}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all text-text-muted hover:text-text-primary shrink-0"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <IconPlus className="w-3.5 h-3.5" />
+        </button>
       </div>
 
-      {/* Generator input */}
-      <div className="glass-card p-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-            placeholder="Nombre del diagrama" className="input-premium flex-1" />
-          {scrumProjects.length > 0 && (
-            <select className="input-premium w-auto text-xs" defaultValue=""
-              onChange={(e) => { const p = scrumProjects.find((x) => x.id === e.target.value); if (p) handleLoadFromScrum(p); }}>
-              <option value="" disabled>Cargar desde proyecto...</option>
-              {scrumProjects.map((p) => <option key={p.id} value={p.id}>{p.project_name}</option>)}
-            </select>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe la app para generar el mapa de pantallas... Ej: 'App de e-commerce con login, catalogo de productos, carrito, checkout y perfil de usuario'"
-            className="input-premium flex-1 resize-none" rows={2} />
-          <button onClick={handleGenerate} disabled={generating || !prompt.trim()}
-            className="btn-primary shrink-0 flex items-center gap-1.5 self-end">
-            {generating ? <IconLoader className="w-4 h-4" /> : <IconSpark className="w-4 h-4" />}
-            Generar
-          </button>
-        </div>
-      </div>
-
-      {/* Main canvas area */}
-      <div className="flex gap-3" style={{ height: "calc(100vh - 310px)" }}>
+      {/* Main canvas area — takes almost full height */}
+      <div className="flex gap-2" style={{ height: "calc(100vh - 145px)" }}>
         {/* Saved list */}
         {showList && (
           <div className="w-52 shrink-0 rounded-lg overflow-y-auto"
