@@ -33,6 +33,9 @@ import { listScrum, type ScrumSummary } from "@/lib/scrum-api";
 // ─── Custom Node ──────────────────────────────────────────────────────────────
 
 function CustomNode({ data }: NodeProps) {
+  const label = String(data.label ?? "");
+  const description = data.description ? String(data.description) : "";
+
   return (
     <div
       className="px-4 py-3 rounded-lg min-w-[180px] max-w-[260px] shadow-lg"
@@ -42,9 +45,9 @@ function CustomNode({ data }: NodeProps) {
       }}
     >
       <Handle type="target" position={Position.Top} style={{ background: "#4AEAAA", width: 8, height: 8, border: "2px solid #222240" }} />
-      <p className="text-sm font-semibold text-text-primary leading-tight">{data.label as string}</p>
-      {data.description && (
-        <p className="text-xs text-text-muted mt-1 leading-relaxed">{data.description as string}</p>
+      <p className="text-sm font-semibold text-text-primary leading-tight">{label}</p>
+      {description && (
+        <p className="text-xs text-text-muted mt-1 leading-relaxed">{description}</p>
       )}
       <Handle type="source" position={Position.Bottom} style={{ background: "#4AEAAA", width: 8, height: 8, border: "2px solid #222240" }} />
     </div>
