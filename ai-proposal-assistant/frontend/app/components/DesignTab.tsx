@@ -127,29 +127,27 @@ function NodeContextMenu({
   );
 }
 
-// ─── Custom Node (horizontal tree — handles left/right) ──────────────────────
+// ─── Shared edit hooks for nodes ─────────────────────────────────────────────
 
-function CustomNode({ id, data, selected }: NodeProps) {
-  const label = String(data.label ?? "");
-  const description = data.description ? String(data.description) : "";
-  const colorKey = String(data.color ?? "blue");
-  const c = NODE_COLORS[colorKey] ?? DEFAULT_COLOR;
-  const [collapsed, setCollapsed] = useState(!!data._collapsed);
-  const [editing, setEditing] = useState(!!data._editing);
+function useNodeEdit(id: string, label: string, description: string) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(label);
   const [editDesc, setEditDesc] = useState(description);
   const { setNodes } = useReactFlow();
 
-  // Sync editing state from external trigger (context menu)
   useEffect(() => {
-    if (data._editing && !editing) {
+    // handled externally
+  }, []);
+
+  const syncEditing = useCallback((dataEditing: unknown) => {
+    if (dataEditing && !editing) {
       setEditLabel(label);
       setEditDesc(description);
       setEditing(true);
-      // Clear the flag
       setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, _editing: false } } : n));
     }
-  }, [data._editing, editing, id, label, description, setNodes]);
+  }, [editing, id, label, description, setNodes]);
 
   const toggleCollapse = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -170,33 +168,106 @@ function CustomNode({ id, data, selected }: NodeProps) {
     setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, label: editLabel, description: editDesc } } : n));
   };
 
+  return { collapsed, editing, editLabel, editDesc, setEditLabel, setEditDesc, syncEditing, toggleCollapse, startEditing, commitEdit };
+}
+
+// ─── Main Section Node (large filled card — like reference image) ────────────
+
+function MainNode({ id, data, selected }: NodeProps) {
+  const label = String(data.label ?? "");
+  const description = data.description ? String(data.description) : "";
+  const colorKey = String(data.color ?? "blue");
+  const c = NODE_COLORS[colorKey] ?? DEFAULT_COLOR;
+  const { collapsed, editing, editLabel, editDesc, setEditLabel, setEditDesc, syncEditing, toggleCollapse, startEditing, commitEdit } = useNodeEdit(id, label, description);
+
+  useEffect(() => { syncEditing(data._editing); }, [data._editing, syncEditing]);
+
   return (
     <div
-      className="rounded-xl min-w-[150px] max-w-[260px] transition-all duration-200"
+      className="rounded-2xl min-w-[180px] max-w-[280px] transition-all duration-200"
       style={{
-        background: c.bg,
-        border: `2px solid ${selected ? c.accent : c.border}`,
-        boxShadow: selected ? `0 0 20px ${c.accent}40, 0 4px 16px rgba(0,0,0,0.1)` : `0 2px 12px rgba(0,0,0,0.08)`,
-        backdropFilter: "blur(12px)",
+        background: c.accent,
+        border: `2px solid ${selected ? "#fff" : c.accent}`,
+        boxShadow: selected ? `0 0 24px ${c.accent}60, 0 4px 20px rgba(0,0,0,0.15)` : `0 4px 20px rgba(0,0,0,0.12)`,
       }}
     >
       <Handle type="target" position={Position.Left} id="left"
-        style={{ background: c.accent, width: 10, height: 10, border: "2px solid #fff" }} />
+        style={{ background: "#fff", width: 10, height: 10, border: `2px solid ${c.accent}` }} />
 
-      <div className="px-3 py-2">
+      <div className="px-5 py-4">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.accent }} />
           {editing ? (
-            <input className="text-sm font-bold bg-white/80 border rounded px-1 outline-none flex-1 min-w-0"
-              style={{ color: c.text, borderColor: c.accent }}
+            <input className="text-base font-bold bg-white/20 border-b border-white/40 rounded-none px-0 outline-none flex-1 min-w-0 text-white placeholder-white/50"
               value={editLabel} onChange={(e) => setEditLabel(e.target.value)}
               onBlur={commitEdit} onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); }}
               autoFocus />
           ) : (
-            <p className="text-sm font-bold leading-tight flex-1 cursor-text" style={{ color: c.text }}
+            <p className="text-base font-bold leading-tight flex-1 cursor-text text-white"
               onDoubleClick={startEditing}>{label}</p>
           )}
-          <button onClick={toggleCollapse} className="shrink-0 opacity-50 hover:opacity-100 transition-opacity p-0.5"
+          <button onClick={toggleCollapse} className="shrink-0 opacity-70 hover:opacity-100 transition-opacity p-0.5 text-white">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+              {collapsed ? <polyline points="6,9 12,15 18,9" /> : <polyline points="6,15 12,9 18,15" />}
+            </svg>
+          </button>
+        </div>
+        {!collapsed && (
+          editing ? (
+            <textarea className="text-xs leading-relaxed mt-1.5 bg-white/20 border-b border-white/40 rounded-none px-0 outline-none w-full resize-none text-white/80 placeholder-white/40"
+              value={editDesc} onChange={(e) => setEditDesc(e.target.value)}
+              onBlur={commitEdit} rows={2} />
+          ) : description ? (
+            <p className="text-xs leading-relaxed mt-1.5 cursor-text text-white/70"
+              onDoubleClick={startEditing}>{description}</p>
+          ) : (
+            <p className="text-xs leading-relaxed mt-1.5 cursor-text italic text-white/40"
+              onDoubleClick={startEditing}>Doble click para editar</p>
+          )
+        )}
+      </div>
+
+      <Handle type="source" position={Position.Right} id="right"
+        style={{ background: "#fff", width: 10, height: 10, border: `2px solid ${c.accent}` }} />
+    </div>
+  );
+}
+
+// ─── Custom Sub-Node (outlined card — white with thin border) ────────────────
+
+function CustomNode({ id, data, selected }: NodeProps) {
+  const label = String(data.label ?? "");
+  const description = data.description ? String(data.description) : "";
+  const colorKey = String(data.color ?? "blue");
+  const c = NODE_COLORS[colorKey] ?? DEFAULT_COLOR;
+  const { collapsed, editing, editLabel, editDesc, setEditLabel, setEditDesc, syncEditing, toggleCollapse, startEditing, commitEdit } = useNodeEdit(id, label, description);
+
+  useEffect(() => { syncEditing(data._editing); }, [data._editing, syncEditing]);
+
+  return (
+    <div
+      className="rounded-xl min-w-[140px] max-w-[260px] transition-all duration-200"
+      style={{
+        background: "#fff",
+        border: `1.5px solid ${selected ? c.accent : "rgba(0,0,0,0.15)"}`,
+        boxShadow: selected ? `0 0 16px ${c.accent}30, 0 2px 8px rgba(0,0,0,0.08)` : `0 1px 6px rgba(0,0,0,0.06)`,
+      }}
+    >
+      <Handle type="target" position={Position.Left} id="left"
+        style={{ background: c.accent, width: 8, height: 8, border: "2px solid #fff" }} />
+
+      <div className="px-3 py-2.5">
+        <div className="flex items-center gap-2">
+          {editing ? (
+            <input className="text-sm font-semibold bg-gray-50 border rounded px-1 outline-none flex-1 min-w-0"
+              style={{ color: "#333", borderColor: c.accent }}
+              value={editLabel} onChange={(e) => setEditLabel(e.target.value)}
+              onBlur={commitEdit} onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); }}
+              autoFocus />
+          ) : (
+            <p className="text-sm font-semibold leading-tight flex-1 cursor-text" style={{ color: "#333" }}
+              onDoubleClick={startEditing}>{label}</p>
+          )}
+          <button onClick={toggleCollapse} className="shrink-0 opacity-40 hover:opacity-80 transition-opacity p-0.5"
             style={{ color: "#666" }}>
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               {collapsed ? <polyline points="6,9 12,15 18,9" /> : <polyline points="6,15 12,9 18,15" />}
@@ -205,33 +276,24 @@ function CustomNode({ id, data, selected }: NodeProps) {
         </div>
         {!collapsed && (
           editing ? (
-            <textarea className="text-[11px] leading-relaxed ml-[18px] mt-1 bg-white/80 border rounded px-1 outline-none w-full resize-none"
-              style={{ color: "#555", borderColor: c.border }}
+            <textarea className="text-[11px] leading-relaxed mt-1 bg-gray-50 border rounded px-1 outline-none w-full resize-none text-gray-500"
+              style={{ borderColor: "rgba(0,0,0,0.15)" }}
               value={editDesc} onChange={(e) => setEditDesc(e.target.value)}
               onBlur={commitEdit} rows={2} />
-          ) : (
-            description ? (
-              <p className="text-[11px] leading-relaxed ml-[18px] mt-1 cursor-text" style={{ color: "#777" }}
-                onDoubleClick={startEditing}>
-                {description}
-              </p>
-            ) : (
-              <p className="text-[11px] leading-relaxed ml-[18px] mt-1 cursor-text italic" style={{ color: "#aaa" }}
-                onDoubleClick={startEditing}>
-                Doble click para editar
-              </p>
-            )
-          )
+          ) : description ? (
+            <p className="text-[11px] leading-relaxed mt-1 cursor-text" style={{ color: "#888" }}
+              onDoubleClick={startEditing}>{description}</p>
+          ) : null
         )}
       </div>
 
       <Handle type="source" position={Position.Right} id="right"
-        style={{ background: c.accent, width: 10, height: 10, border: "2px solid #fff" }} />
+        style={{ background: c.accent, width: 8, height: 8, border: "2px solid #fff" }} />
     </div>
   );
 }
 
-const nodeTypes = { custom: CustomNode };
+const nodeTypes = { custom: CustomNode, main: MainNode };
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -345,7 +407,7 @@ function DesignTabInner() {
   const { addToast } = useToast();
   const reactFlowInstance = useReactFlow();
 
-  const edgeStyle = { stroke: "rgba(0,0,0,0.25)", strokeWidth: 1.5 };
+  const edgeStyle = { stroke: "#22B8CF", strokeWidth: 1.5 };
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge({
@@ -722,8 +784,8 @@ function DesignTabInner() {
             />
             <MiniMap
               nodeColor={(n) => {
-                const c = String(n.data?.color ?? "blue");
-                return NODE_COLORS[c]?.accent ?? "#3B82F6";
+                const ck = String(n.data?.color ?? "blue");
+                return NODE_COLORS[ck]?.accent ?? "#3B82F6";
               }}
               style={{ background: "#FAFAF8", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10 }}
               maskColor="rgba(0,0,0,0.12)"

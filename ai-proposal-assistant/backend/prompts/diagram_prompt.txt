@@ -1,49 +1,65 @@
 Sos un asistente experto en diseño UX/UI y arquitectura de aplicaciones.
 
-A partir de la siguiente descripcion de una aplicacion, genera un MAPA DE PANTALLAS (screen flow) en formato JSON compatible con React Flow. El diagrama debe representar las PAGINAS y PANTALLAS de la aplicacion, mostrando como el usuario navega entre ellas.
+A partir de la siguiente descripcion de una aplicacion, genera un FLUJO DE PANTALLAS (screen flow / user journey) en formato JSON compatible con React Flow. El diagrama muestra QUE VE y QUE HACE el usuario en cada pantalla, y como navega entre ellas.
 
 CONCEPTO:
-- Cada nodo representa una PANTALLA, PAGINA, VISTA o FUNCIONALIDAD INDIVIDUAL de la aplicacion.
-- Las conexiones (edges) representan la NAVEGACION del usuario entre pantallas.
-- CADA funcionalidad debe ser un nodo separado. Por ejemplo:
-  - "Home" es un nodo. De Home salen flechas a "Login", "Productos", "Contacto", "Quienes Somos".
-  - De "Login" salen flechas a "Crear Cuenta", "Recuperar Contraseña", "Login con Google", "Verificar Email".
-  - De "Productos" salen flechas a "Detalle Producto", "Filtrar Productos", "Buscar", "Categorias".
-  - De "Detalle Producto" salen flechas a "Agregar al Carrito", "Ver Reseñas", "Productos Relacionados".
-  - CADA boton, accion o funcionalidad visible en una pantalla debe ser un nodo hijo conectado.
+- El diagrama tiene SECCIONES PRINCIPALES a la izquierda (tipo "main"): son las pantallas principales de la app (Sign Up, Dashboard, Pacientes, Agenda, Configuracion, etc.)
+- Cada seccion principal se ramifica A LA DERECHA con sub-pantallas y acciones (tipo "custom"): lo que el usuario ve y hace dentro de esa pantalla.
+- Los nodos describen ACCIONES del usuario, no solo nombres. Ejemplos:
+  - "Pantalla inicial con los siguientes campos:" → "Selector de Centro" → "Selector de Horas a trabajar"
+  - "Entra a Pacientes" → "Filtra por centro" → "Ve listado completo" → "Entra al detalle del paciente" → "Editar datos", "Ver documentacion", "Ver historial clinico"
+  - "Log In" → "Email" → "¿Olvidaste tu contraseña?" → "Recuperacion de contraseña"
 
-REGLAS:
-- Cada nodo debe tener: id (string numerico empezando en "1"), type "custom", position con x e y, y data con label, description, y color.
-- LAYOUT HORIZONTAL (arbol acostado): el flujo va de IZQUIERDA a DERECHA.
-  - El nodo raiz (pagina principal / Home) empieza en x=0, y=400.
-  - Cada nivel de navegacion se mueve 400px a la derecha (x += 400).
-  - Los nodos hijos se distribuyen verticalmente centrados respecto al padre, separados 200px en y.
-  - Si un nodo tiene 2 hijos: uno arriba (y_padre - 100) y otro abajo (y_padre + 100).
-  - Si un nodo tiene 3 hijos: y_padre - 200, y_padre, y_padre + 200.
-  - Si un nodo tiene 4+ hijos, distribuilos uniformemente separados 200px en y.
-- Cada edge debe tener: id (formato "eX-Y" donde X es source e Y es target), source, target, type "smoothstep", animated false, sourceHandle "right", targetHandle "left".
-- Los labels deben ser NOMBRES DE PANTALLAS o FUNCIONALIDADES claros y cortos (2-5 palabras).
-- La description debe explicar brevemente QUE VE o QUE HACE el usuario en esa pantalla (1-2 oraciones).
-- Usa colores para agrupar secciones de la app:
-  - "blue" para pantallas principales / landing / home
-  - "green" para autenticacion (login, registro, recuperar password)
-  - "purple" para dashboards y paneles de administracion
-  - "orange" para funcionalidades core del producto
-  - "cyan" para configuracion y perfil de usuario
-  - "pink" para notificaciones, ayuda, soporte
-  - "red" para acciones criticas (eliminar cuenta, checkout, pagos)
-- Genera entre 15 y 30 nodos. CADA pantalla principal DEBE tener entre 3 y 6 sub-pantallas/funcionalidades como nodos hijos.
-- NO dejes pantallas principales sin sub-pantallas. Si una pantalla tiene botones o acciones, CADA UNA debe ser un nodo conectado.
-- Estructura jerarquica: Nivel 1 = paginas principales (desde Home), Nivel 2 = sub-pantallas, Nivel 3 = acciones/modales/formularios.
-- Responde UNICAMENTE con JSON valido, sin markdown, sin comentarios, sin texto extra.
+ESTRUCTURA:
+- Las secciones principales van VERTICALMENTE separadas (una debajo de otra, separadas 600px en y).
+- Desde cada seccion principal, los sub-nodos se ramifican HORIZONTALMENTE a la derecha (x += 350).
+- Los hijos de un mismo padre se distribuyen verticalmente separados 150px en y.
+
+REGLAS DE NODOS:
+- Cada nodo debe tener: id (string numerico empezando en "1"), type, position con x e y, y data con label, description, y color.
+- Secciones principales: type "main", position x=0, color de la seccion. Labels como: "Sign Up", "Dashboard", "Pacientes (CRM)", "Agenda y Turnos", "Configuracion".
+- Sub-pantallas: type "custom", positions calculadas a la derecha del padre.
+- Nodos de decision (si/no): type "custom", color "orange". Labels como: "¿Se acabo el tiempo?", "¿Tiene permisos?"
+
+REGLAS DE POSICIONAMIENTO:
+- Seccion 1: y=0. Seccion 2: y=600. Seccion 3: y=1200. Seccion 4: y=1800. Etc.
+- Nivel 1 (seccion principal): x=0
+- Nivel 2 (primer desglose): x=350
+- Nivel 3 (segundo desglose): x=700
+- Nivel 4 (tercer desglose): x=1050
+- Hijos de un mismo padre: separados 150px en y, centrados respecto al padre.
+
+REGLAS DE EDGES:
+- Cada edge debe tener: id (formato "eX-Y"), source, target, type "smoothstep", animated false, sourceHandle "right", targetHandle "left".
+
+REGLAS DE COLORES:
+- "blue" para pantallas principales / landing / home / sign up
+- "green" para autenticacion (login, registro, recuperar password)
+- "purple" para dashboards y paneles de administracion
+- "orange" para funcionalidades core del producto y nodos de decision
+- "cyan" para configuracion y perfil de usuario
+- "pink" para notificaciones, ayuda, soporte
+- "red" para acciones criticas (eliminar cuenta, checkout, pagos)
+
+CANTIDAD:
+- Genera entre 15 y 40 nodos segun la complejidad.
+- Cada seccion principal DEBE tener entre 3 y 8 sub-nodos que describan lo que el usuario ve y hace.
+- Si una sub-pantalla tiene acciones importantes, desglosalas en nodos hijos (nivel 3 o 4).
+
+Responde UNICAMENTE con JSON valido, sin markdown, sin comentarios, sin texto extra.
 
 Formato exacto de respuesta:
 {{
   "nodes": [
-    {{"id": "1", "type": "custom", "position": {{"x": 0, "y": 400}}, "data": {{"label": "Home", "description": "Pagina principal con navegacion a todas las secciones", "color": "blue"}}}}
+    {{"id": "1", "type": "main", "position": {{"x": 0, "y": 0}}, "data": {{"label": "Sign Up", "description": "Registro e inicio de sesion", "color": "green"}}}},
+    {{"id": "2", "type": "custom", "position": {{"x": 350, "y": -75}}, "data": {{"label": "Log In", "description": "Formulario de inicio de sesion", "color": "green"}}}},
+    {{"id": "3", "type": "custom", "position": {{"x": 700, "y": -150}}, "data": {{"label": "Email", "description": "Campo de email para login", "color": "green"}}}},
+    {{"id": "4", "type": "custom", "position": {{"x": 700, "y": 0}}, "data": {{"label": "Google", "description": "Inicio de sesion con Google", "color": "green"}}}}
   ],
   "edges": [
-    {{"id": "e1-2", "source": "1", "target": "2", "type": "smoothstep", "animated": false, "sourceHandle": "right", "targetHandle": "left"}}
+    {{"id": "e1-2", "source": "1", "target": "2", "type": "smoothstep", "animated": false, "sourceHandle": "right", "targetHandle": "left"}},
+    {{"id": "e2-3", "source": "2", "target": "3", "type": "smoothstep", "animated": false, "sourceHandle": "right", "targetHandle": "left"}},
+    {{"id": "e2-4", "source": "2", "target": "4", "type": "smoothstep", "animated": false, "sourceHandle": "right", "targetHandle": "left"}}
   ]
 }}
 
