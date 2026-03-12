@@ -82,7 +82,7 @@ const IconLoader = ({ className = "w-5 h-5" }: { className?: string }) => (
   </svg>
 );
 const IconChevron = ({ open, className = "w-4 h-4" }: { open: boolean; className?: string }) => (
-  <svg className={`${className} transition-transform ${open ? "rotate-90" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+  <svg className={`${className} transition-transform duration-200 ${open ? "rotate-90" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
     <polyline points="9,18 15,12 9,6" />
   </svg>
 );
@@ -93,36 +93,39 @@ const IconEdit = ({ className = "w-4 h-4" }: { className?: string }) => (
   </svg>
 );
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Inline badges (Linear-style) ────────────────────────────────────────────
 
-function StatusBadge({ status, onClick }: { status: StoryStatus; onClick?: () => void }) {
-  const styles = {
-    pendiente: "text-text-muted bg-white/4 border-white/8 hover:border-white/16",
-    en_progreso: "text-blue-400 bg-blue-400/10 border-blue-400/20 hover:bg-blue-400/20",
-    completada: "text-brand-mint bg-brand-mint/10 border-brand-mint/20 hover:bg-brand-mint/20",
+function StatusDot({ status, onClick }: { status: StoryStatus; onClick?: () => void }) {
+  const cfg: Record<StoryStatus, string> = {
+    pendiente: "border-zinc-500 hover:border-zinc-400",
+    en_progreso: "border-amber-400 bg-amber-400/20",
+    completada: "border-emerald-400 bg-emerald-400",
   };
-  const labels = { pendiente: "Pendiente", en_progreso: "En progreso", completada: "Completada" };
   return (
-    <button onClick={onClick}
-      className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all duration-200 ${styles[status]}`}>
-      {labels[status]}
+    <button onClick={onClick} className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${cfg[status]}`}
+      title={status === "pendiente" ? "Pendiente" : status === "en_progreso" ? "En progreso" : "Completada"}>
+      {status === "completada" && (
+        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 6l3 3 5-5" />
+        </svg>
+      )}
+      {status === "en_progreso" && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
     </button>
   );
 }
 
-function PriorityBadge({ priority, onChange }: { priority: StoryPriority; onChange?: (v: StoryPriority) => void }) {
-  const styles = { alta: "text-red-400 bg-red-400/10 border-red-400/20", media: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20", baja: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" };
-  if (!onChange) return (
-    <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${styles[priority]}`}>
-      {priority}
-    </span>
-  );
+function PrioritySelect({ priority, onChange }: { priority: StoryPriority; onChange?: (v: StoryPriority) => void }) {
+  const colors: Record<StoryPriority, string> = {
+    alta: "text-red-400",
+    media: "text-amber-400",
+    baja: "text-zinc-500",
+  };
+  if (!onChange) {
+    return <span className={`text-xs font-medium uppercase tracking-wide ${colors[priority]}`}>{priority}</span>;
+  }
   return (
-    <select
-      value={priority}
-      onChange={(e) => onChange(e.target.value as StoryPriority)}
-      className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border bg-transparent cursor-pointer ${styles[priority]}`}
-    >
+    <select value={priority} onChange={(e) => onChange(e.target.value as StoryPriority)}
+      className={`text-xs font-medium uppercase tracking-wide bg-transparent cursor-pointer border-0 outline-none ${colors[priority]}`}>
       <option value="alta">Alta</option>
       <option value="media">Media</option>
       <option value="baja">Baja</option>
@@ -130,19 +133,13 @@ function PriorityBadge({ priority, onChange }: { priority: StoryPriority; onChan
   );
 }
 
-function PointsBadge({ points, onChange }: { points: number; onChange?: (v: number) => void }) {
-  const color = points <= 3 ? "text-emerald-400" : points <= 8 ? "text-yellow-400" : "text-red-400";
-  if (!onChange) return (
-    <span className={`text-xs font-bold tabular-nums ${color}`}>{points}pt</span>
-  );
+function PointsSelect({ points, onChange }: { points: number; onChange?: (v: number) => void }) {
+  const color = points <= 3 ? "text-emerald-400" : points <= 8 ? "text-amber-400" : "text-red-400";
+  if (!onChange) return <span className={`text-xs font-mono font-bold tabular-nums ${color}`}>{points}</span>;
   return (
-    <select
-      value={points}
-      onChange={(e) => onChange(Number(e.target.value))}
-      className={`text-xs font-bold border-0 bg-transparent cursor-pointer rounded px-1 ${color}`}
-      style={{ background: "rgba(255,255,255,0.04)" }}
-    >
-      {FIBONACCI.map((f) => <option key={f} value={f}>{f}pt</option>)}
+    <select value={points} onChange={(e) => onChange(Number(e.target.value))}
+      className={`text-xs font-mono font-bold bg-transparent cursor-pointer border-0 outline-none ${color}`}>
+      {FIBONACCI.map((f) => <option key={f} value={f}>{f}</option>)}
     </select>
   );
 }
@@ -173,40 +170,29 @@ async function exportToPDF(project: ScrumFull) {
 
   let y = M;
 
-  // ── Cover header ──
   setFill(DARK_BG);
   doc.rect(0, 0, PW, 52, "F");
-
-  // Logo text
   setColor(MINT);
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.text("CruzNegraDev LLC", M, y + 6);
-
-  // Title
   setColor(WHITE);
   doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
   doc.text("SPRINT PLANNING", PW - M, y + 6, { align: "right" });
-
   y += 16;
   setColor(LIGHT);
   doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
   doc.text(project.project_name, M, y);
-
   y += 7;
-  setColor([170, 170, 200] as [number,number,number]);
+  setColor([170, 170, 200] as RGB);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   const meta: string[] = [];
   if (project.client_name) meta.push(`Cliente: ${project.client_name}`);
   meta.push(`Generado: ${new Date().toLocaleDateString("es-AR")}`);
   doc.text(meta.join("   ·   "), M, y);
-
   y = 60;
 
-  // ── Summary ──
   if (project.data.summary) {
     setColor(BLACK);
     doc.setFontSize(9);
@@ -216,7 +202,6 @@ async function exportToPDF(project: ScrumFull) {
     y += lines.length * 5 + 4;
   }
 
-  // ── Global stats ──
   const totalSprints = project.data.sprints.length;
   const totalPoints = project.data.sprints.reduce((s, sp) => s + sprintPoints(sp), 0);
   const totalStories = project.data.sprints.reduce((s, sp) => s + sp.stories.length, 0);
@@ -225,12 +210,7 @@ async function exportToPDF(project: ScrumFull) {
   autoTable(doc, {
     startY: y,
     head: [["Sprints", "Total Story Points", "User Stories", "Velocidad recomendada"]],
-    body: [[
-      `${totalSprints} sprints`,
-      `${totalPoints} puntos`,
-      `${totalStories} historias`,
-      `${velocity} pts/sprint`,
-    ]],
+    body: [[`${totalSprints} sprints`, `${totalPoints} puntos`, `${totalStories} historias`, `${velocity} pts/sprint`]],
     margin: { left: M, right: M },
     headStyles: { fillColor: [0, 200, 130], textColor: [15, 15, 30], fontStyle: "bold", fontSize: 8 },
     bodyStyles: { fontSize: 9, textColor: BLACK, halign: "center" },
@@ -239,32 +219,22 @@ async function exportToPDF(project: ScrumFull) {
 
   y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
 
-  // ── Sprints ──
   for (const sprint of project.data.sprints) {
     const points = sprintPoints(sprint);
     const completedStories = sprint.stories.filter((s) => s.status === "completada").length;
+    if (y > PH - 60) { doc.addPage(); y = M; }
 
-    // Check page space
-    if (y > PH - 60) {
-      doc.addPage();
-      y = M;
-    }
-
-    // Sprint header bar
     setFill(DARK_BG);
     doc.roundedRect(M, y, CW, 18, 2, 2, "F");
-
     setColor(MINT);
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.text(`Sprint ${sprint.number}: ${sprint.name}`, M + 4, y + 7);
-
-    setColor([170, 170, 200] as [number,number,number]);
+    setColor([170, 170, 200] as RGB);
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text(`${points} pts  ·  ${sprint.stories.length} historias  ·  ${sprint.duration_weeks} semanas  ·  ${completedStories}/${sprint.stories.length} completadas`, PW - M - 4, y + 7, { align: "right" });
 
-    // Goal
     if (sprint.goal) {
       setColor(GRAY);
       doc.setFontSize(8);
@@ -273,24 +243,13 @@ async function exportToPDF(project: ScrumFull) {
       doc.text(goalLines, M + 4, y + 14);
       y += goalLines.length * 4;
     }
-
     y += 22;
 
-    // Stories table
     if (sprint.stories.length > 0) {
       const rows = sprint.stories.map((story, i) => {
-        const pts = story.story_points;
         const statusLabel = story.status === "completada" ? "✓ Completada" : story.status === "en_progreso" ? "► En progreso" : "○ Pendiente";
-        return [
-          `${i + 1}`,
-          story.title || "(sin título)",
-          story.acceptance_criteria.filter(Boolean).join("\n") || "—",
-          `${pts}pt`,
-          story.priority.toUpperCase(),
-          statusLabel,
-        ];
+        return [`${i + 1}`, story.title || "(sin título)", story.acceptance_criteria.filter(Boolean).join("\n") || "—", `${story.story_points}pt`, story.priority.toUpperCase(), statusLabel];
       });
-
       autoTable(doc, {
         startY: y,
         head: [["#", "Historia de usuario", "Criterios de aceptación", "Pts", "Prior.", "Estado"]],
@@ -298,14 +257,7 @@ async function exportToPDF(project: ScrumFull) {
         margin: { left: M, right: M },
         headStyles: { fillColor: [40, 40, 70], textColor: WHITE, fontStyle: "bold", fontSize: 7.5 },
         bodyStyles: { fontSize: 7.5, textColor: BLACK, valign: "top" },
-        columnStyles: {
-          0: { cellWidth: 8, halign: "center" },
-          1: { cellWidth: 62 },
-          2: { cellWidth: 58 },
-          3: { cellWidth: 12, halign: "center" },
-          4: { cellWidth: 14, halign: "center" },
-          5: { cellWidth: 26, halign: "center" },
-        },
+        columnStyles: { 0: { cellWidth: 8, halign: "center" }, 1: { cellWidth: 62 }, 2: { cellWidth: 58 }, 3: { cellWidth: 12, halign: "center" }, 4: { cellWidth: 14, halign: "center" }, 5: { cellWidth: 26, halign: "center" } },
         alternateRowStyles: { fillColor: [245, 245, 252] },
         didParseCell: (data) => {
           if (data.column.index === 3) {
@@ -322,20 +274,16 @@ async function exportToPDF(project: ScrumFull) {
           }
         },
       });
-
       y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
     }
 
-    // Deliverables
     if (sprint.deliverables.filter((d) => d.title).length > 0) {
       if (y > PH - 30) { doc.addPage(); y = M; }
-
       setColor([80, 80, 100] as [number,number,number]);
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
       doc.text("Entregables del sprint:", M, y + 4);
       y += 8;
-
       for (const del of sprint.deliverables.filter((d) => d.title)) {
         setColor(GRAY);
         doc.setFontSize(7.5);
@@ -344,11 +292,9 @@ async function exportToPDF(project: ScrumFull) {
         y += 5;
       }
     }
-
     y += 8;
   }
 
-  // ── Notes ──
   if (project.data.notes) {
     if (y > PH - 30) { doc.addPage(); y = M; }
     setColor([80, 80, 100] as [number,number,number]);
@@ -362,7 +308,6 @@ async function exportToPDF(project: ScrumFull) {
     doc.text(noteLines, M, y);
   }
 
-  // ── Footer on all pages ──
   const totalPages = (doc as unknown as { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
@@ -380,92 +325,84 @@ async function exportToPDF(project: ScrumFull) {
   doc.save(name);
 }
 
-// ─── Story Row (edit mode) ────────────────────────────────────────────────────
+// ─── Story Row (view mode — Jira backlog style) ──────────────────────────────
 
-function StoryRow({
-  story, onUpdate, onDelete, editMode,
+function StoryRowView({ story, onUpdate }: { story: UserStory; onUpdate: (s: UserStory) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const criteria = story.acceptance_criteria.filter(Boolean);
+
+  return (
+    <div className={`transition-colors ${story.status === "completada" ? "opacity-50" : ""}`}>
+      <div className="flex items-center gap-3 px-3 py-2 hover:bg-white/[0.03] border-b border-white/[0.04]">
+        <StatusDot status={story.status} onClick={() => onUpdate({ ...story, status: nextStatus(story.status) })} />
+
+        <p className={`flex-1 text-sm truncate ${story.status === "completada" ? "line-through text-text-muted" : "text-text-primary"}`}>
+          {story.title || "(sin titulo)"}
+        </p>
+
+        {criteria.length > 0 && (
+          <button onClick={() => setExpanded(!expanded)} className="text-xs text-text-muted hover:text-text-secondary transition-colors">
+            {criteria.length} AC
+          </button>
+        )}
+
+        <PrioritySelect priority={story.priority} />
+        <PointsSelect points={story.story_points} />
+      </div>
+
+      {expanded && criteria.length > 0 && (
+        <div className="px-10 py-2 space-y-1 border-b border-white/[0.04]" style={{ background: "rgba(255,255,255,0.015)" }}>
+          {criteria.map((c, i) => (
+            <p key={i} className="text-xs text-text-muted flex items-start gap-2">
+              <span className="text-emerald-400 mt-px">✓</span>{c}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Story Row (edit mode) ───────────────────────────────────────────────────
+
+function StoryRowEdit({
+  story, onUpdate, onDelete,
 }: {
   story: UserStory;
   onUpdate: (s: UserStory) => void;
   onDelete: () => void;
-  editMode: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-
-  if (!editMode) {
-    return (
-      <div className={`glass-card p-3 transition-all duration-200 ${story.status === "completada" ? "opacity-60" : ""}`}>
-        <div className="flex items-start gap-3">
-          <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium leading-snug ${story.status === "completada" ? "line-through text-text-muted" : "text-text-primary"}`}>
-              {story.title || "(sin título)"}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <PointsBadge points={story.story_points} />
-            <PriorityBadge priority={story.priority} />
-            <StatusBadge status={story.status} onClick={() => onUpdate({ ...story, status: nextStatus(story.status) })} />
-          </div>
-        </div>
-        {story.acceptance_criteria.filter(Boolean).length > 0 && (
-          <button onClick={() => setOpen(!open)} className="mt-2 text-[10px] text-text-muted hover:text-brand-mint transition-colors flex items-center gap-1">
-            <IconChevron open={open} className="w-3 h-3" />
-            {story.acceptance_criteria.filter(Boolean).length} criterios de aceptación
-          </button>
-        )}
-        {open && (
-          <ul className="mt-2 space-y-1">
-            {story.acceptance_criteria.filter(Boolean).map((c, i) => (
-              <li key={i} className="text-xs text-text-muted flex items-start gap-2">
-                <span className="text-brand-mint mt-0.5">✓</span>{c}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div className="glass-card p-4 space-y-3">
+    <div className="rounded-lg p-3 space-y-2" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
       <div className="flex items-center gap-2">
-        <input
-          type="text"
-          value={story.title}
+        <input type="text" value={story.title}
           onChange={(e) => onUpdate({ ...story, title: e.target.value })}
           placeholder="Como [usuario] quiero [funcionalidad] para [beneficio]"
-          className="input-premium flex-1 text-sm py-1.5"
-        />
-        <PointsBadge points={story.story_points} onChange={(v) => onUpdate({ ...story, story_points: v })} />
-        <PriorityBadge priority={story.priority} onChange={(v) => onUpdate({ ...story, priority: v })} />
+          className="input-premium flex-1 text-sm py-1.5" />
+        <PointsSelect points={story.story_points} onChange={(v) => onUpdate({ ...story, story_points: v })} />
+        <PrioritySelect priority={story.priority} onChange={(v) => onUpdate({ ...story, priority: v })} />
         <button onClick={onDelete} className="p-1.5 rounded text-text-muted hover:text-red-400 transition-colors">
           <IconTrash className="w-3.5 h-3.5" />
         </button>
       </div>
-      <textarea
-        value={story.description}
+      <textarea value={story.description}
         onChange={(e) => onUpdate({ ...story, description: e.target.value })}
-        placeholder="Descripción técnica..."
-        rows={2}
-        className="input-premium w-full text-xs resize-none py-1.5"
-      />
+        placeholder="Descripcion tecnica..."
+        rows={2} className="input-premium w-full text-xs resize-none py-1.5" />
       <div>
-        <p className="text-[10px] text-text-muted mb-1.5">Criterios de aceptación</p>
-        <div className="space-y-1.5">
+        <p className="text-xs text-text-muted mb-1.5 font-medium">Criterios de aceptacion</p>
+        <div className="space-y-1">
           {story.acceptance_criteria.map((c, i) => (
             <div key={i} className="flex gap-2 items-center">
-              <span className="text-brand-mint text-xs">✓</span>
-              <input
-                type="text"
-                value={c}
+              <span className="text-emerald-400 text-xs">✓</span>
+              <input type="text" value={c}
                 onChange={(e) => {
                   const updated = [...story.acceptance_criteria];
                   updated[i] = e.target.value;
                   onUpdate({ ...story, acceptance_criteria: updated });
                 }}
                 placeholder={`Criterio ${i + 1}...`}
-                className="input-premium flex-1 text-xs py-1"
-              />
+                className="input-premium flex-1 text-xs py-1" />
               <button onClick={() => {
                 const updated = story.acceptance_criteria.filter((_, j) => j !== i);
                 onUpdate({ ...story, acceptance_criteria: updated.length ? updated : [""] });
@@ -476,8 +413,7 @@ function StoryRow({
           ))}
           <button
             onClick={() => onUpdate({ ...story, acceptance_criteria: [...story.acceptance_criteria, ""] })}
-            className="text-[10px] text-brand-mint/70 hover:text-brand-mint transition-colors flex items-center gap-1"
-          >
+            className="text-xs text-brand-mint/70 hover:text-brand-mint transition-colors flex items-center gap-1 mt-1">
             <IconPlus className="w-3 h-3" />Agregar criterio
           </button>
         </div>
@@ -499,7 +435,9 @@ function SprintCard({
   const [collapsed, setCollapsed] = useState(false);
   const points = sprintPoints(sprint);
   const done = sprint.stories.filter((s) => s.status === "completada").length;
-  const progress = sprint.stories.length > 0 ? Math.round((done / sprint.stories.length) * 100) : 0;
+  const inProgress = sprint.stories.filter((s) => s.status === "en_progreso").length;
+  const total = sprint.stories.length;
+  const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
   const updateStory = (id: string, story: UserStory) =>
     onUpdate({ ...sprint, stories: sprint.stories.map((s) => (s.id === id ? story : s)) });
@@ -507,7 +445,6 @@ function SprintCard({
     onUpdate({ ...sprint, stories: sprint.stories.filter((s) => s.id !== id) });
   const addStory = () =>
     onUpdate({ ...sprint, stories: [...sprint.stories, emptyStory()] });
-
   const updateDeliverable = (id: string, field: keyof SprintDeliverable, val: string) =>
     onUpdate({ ...sprint, deliverables: sprint.deliverables.map((d) => d.id === id ? { ...d, [field]: val } : d) });
   const deleteDeliverable = (id: string) =>
@@ -516,154 +453,170 @@ function SprintCard({
     onUpdate({ ...sprint, deliverables: [...sprint.deliverables, { id: uid(), title: "", description: "" }] });
 
   return (
-    <div className="glass-card overflow-hidden">
+    <div className="rounded-lg overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
       {/* Sprint header */}
       <div
-        className="flex items-center gap-3 p-4 cursor-pointer"
-        style={{ borderBottom: collapsed ? "none" : "1px solid rgba(255,255,255,0.05)" }}
+        className="flex items-center gap-3 px-4 py-3 cursor-pointer bg-surface-card/50 hover:bg-surface-card/70 transition-colors"
         onClick={() => setCollapsed(!collapsed)}
       >
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-brand-mint shrink-0"
-          style={{ background: "rgba(0,245,160,0.1)", border: "1px solid rgba(0,245,160,0.2)" }}>
-          {sprint.number}
+        <IconChevron open={!collapsed} />
+
+        {editMode ? (
+          <input type="text" value={sprint.name}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => onUpdate({ ...sprint, name: e.target.value })}
+            className="input-premium text-sm font-semibold py-1 flex-1" />
+        ) : (
+          <span className="text-sm font-semibold text-text-primary flex-1">{sprint.name}</span>
+        )}
+
+        <div className="flex items-center gap-3 shrink-0 text-xs">
+          <span className="text-brand-mint font-medium">{points} pts</span>
+          {done > 0 && <span className="text-emerald-400">{done} done</span>}
+          {inProgress > 0 && <span className="text-amber-400">{inProgress} wip</span>}
+          <span className="text-text-muted">{total} items</span>
         </div>
-        <div className="flex-1 min-w-0">
-          {editMode ? (
-            <input
-              type="text"
-              value={sprint.name}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => onUpdate({ ...sprint, name: e.target.value })}
-              className="input-premium text-sm font-semibold py-0.5 w-full"
-            />
-          ) : (
-            <p className="text-sm font-semibold text-text-primary truncate">{sprint.name}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="text-right hidden sm:block">
-            <p className="text-xs font-semibold text-brand-mint">{points} pts</p>
-            <p className="text-[10px] text-text-muted">{sprint.duration_weeks} sem · {sprint.stories.length} historias</p>
+
+        <div className="w-20 shrink-0">
+          <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden flex">
+            <div className="h-full bg-emerald-400" style={{ width: `${progress}%` }} />
+            <div className="h-full bg-amber-400/60" style={{ width: `${total ? Math.round((inProgress / total) * 100) : 0}%` }} />
           </div>
-          <div className="w-16">
-            <div className="h-1 bg-white/6 rounded-full overflow-hidden">
-              <div className="h-full bg-brand-mint rounded-full" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="text-[9px] text-text-muted text-center mt-0.5">{progress}%</p>
-          </div>
-          {editMode && (
-            <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              className="p-1.5 rounded text-text-muted hover:text-red-400 transition-colors">
-              <IconTrash className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <IconChevron open={!collapsed} />
         </div>
+
+        {editMode && (
+          <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="p-1 rounded text-text-muted hover:text-red-400 transition-colors">
+            <IconTrash className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {!collapsed && (
-        <div className="p-4 space-y-4">
+        <div>
           {/* Goal */}
-          <div>
-            <p className="section-title mb-1.5">Objetivo del sprint</p>
-            {editMode ? (
+          {editMode ? (
+            <div className="px-4 py-2 border-b border-white/[0.04]">
               <input type="text" value={sprint.goal}
                 onChange={(e) => onUpdate({ ...sprint, goal: e.target.value })}
-                placeholder="¿Qué quedará funcionando al terminar este sprint?"
-                className="input-premium w-full text-sm" />
-            ) : (
-              <p className="text-sm text-text-secondary leading-relaxed">{sprint.goal || <span className="text-text-muted italic">Sin objetivo definido</span>}</p>
-            )}
-          </div>
+                placeholder="Objetivo del sprint..."
+                className="input-premium w-full text-sm py-1.5" />
+            </div>
+          ) : sprint.goal && (
+            <div className="px-4 py-2 text-sm text-text-muted border-b border-white/[0.04]" style={{ background: "rgba(255,255,255,0.015)" }}>
+              {sprint.goal}
+            </div>
+          )}
 
-          {/* Duration & dates */}
+          {/* Duration & dates (edit) */}
           {editMode && (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3 px-4 py-3 border-b border-white/[0.04]">
               <div>
-                <p className="section-title mb-1.5">Duración (semanas)</p>
+                <label className="text-xs text-text-muted font-medium block mb-1">Duracion</label>
                 <select value={sprint.duration_weeks}
                   onChange={(e) => onUpdate({ ...sprint, duration_weeks: Number(e.target.value) })}
-                  className="input-premium w-full text-sm">
+                  className="input-premium w-full text-sm py-1.5">
                   {[1, 2, 3, 4].map((w) => <option key={w} value={w}>{w} semana{w > 1 ? "s" : ""}</option>)}
                 </select>
               </div>
               <div>
-                <p className="section-title mb-1.5">Inicio</p>
+                <label className="text-xs text-text-muted font-medium block mb-1">Inicio</label>
                 <input type="date" value={sprint.start_date}
                   onChange={(e) => onUpdate({ ...sprint, start_date: e.target.value })}
-                  className="input-premium w-full text-sm" />
+                  className="input-premium w-full text-sm py-1.5" />
               </div>
               <div>
-                <p className="section-title mb-1.5">Fin</p>
+                <label className="text-xs text-text-muted font-medium block mb-1">Fin</label>
                 <input type="date" value={sprint.end_date}
                   onChange={(e) => onUpdate({ ...sprint, end_date: e.target.value })}
-                  className="input-premium w-full text-sm" />
+                  className="input-premium w-full text-sm py-1.5" />
               </div>
             </div>
           )}
 
-          {/* User stories */}
-          <div>
-            <p className="section-title mb-2">User Stories ({sprint.stories.length})</p>
-            <div className="space-y-2">
-              {sprint.stories.map((story) => (
-                <StoryRow key={story.id} story={story} editMode={editMode}
-                  onUpdate={(s) => updateStory(story.id, s)}
-                  onDelete={() => deleteStory(story.id)} />
-              ))}
+          {/* Stories header */}
+          {!editMode && (
+            <div className="flex items-center gap-3 px-3 py-1.5 text-[11px] text-text-muted uppercase tracking-wider font-medium border-b border-white/[0.04]" style={{ background: "rgba(255,255,255,0.015)" }}>
+              <span className="w-4 shrink-0" />
+              <span className="flex-1">Historia</span>
+              <span>Prior.</span>
+              <span className="w-6 text-right">Pts</span>
             </div>
-            {editMode && (
-              <button onClick={addStory}
-                className="mt-2 w-full py-2 rounded-lg text-xs text-brand-mint/70 hover:text-brand-mint transition-colors flex items-center justify-center gap-1.5"
-                style={{ border: "1px dashed rgba(0,245,160,0.2)" }}>
-                <IconPlus className="w-3.5 h-3.5" />Agregar historia
-              </button>
-            )}
+          )}
+
+          {/* Stories */}
+          <div className={editMode ? "p-3 space-y-2" : ""}>
+            {sprint.stories.map((story) => editMode ? (
+              <StoryRowEdit key={story.id} story={story}
+                onUpdate={(s) => updateStory(story.id, s)}
+                onDelete={() => deleteStory(story.id)} />
+            ) : (
+              <StoryRowView key={story.id} story={story}
+                onUpdate={(s) => updateStory(story.id, s)} />
+            ))}
           </div>
 
-          {/* Deliverables */}
-          <div>
-            <p className="section-title mb-2">Entregables</p>
-            <div className="space-y-2">
-              {sprint.deliverables.map((del) => (
-                editMode ? (
-                  <div key={del.id} className="flex gap-2">
-                    <input type="text" value={del.title}
-                      onChange={(e) => updateDeliverable(del.id, "title", e.target.value)}
-                      placeholder="Nombre del entregable"
-                      className="input-premium flex-1 text-sm py-1.5" />
-                    <input type="text" value={del.description}
-                      onChange={(e) => updateDeliverable(del.id, "description", e.target.value)}
-                      placeholder="Descripción (opcional)"
-                      className="input-premium flex-1 text-sm py-1.5" />
-                    <button onClick={() => deleteDeliverable(del.id)}
-                      className="p-1.5 text-text-muted hover:text-red-400 transition-colors">
-                      <IconTrash className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : del.title ? (
-                  <div key={del.id} className="flex items-start gap-2">
-                    <span className="text-brand-mint text-xs mt-0.5">→</span>
-                    <div>
-                      <p className="text-xs font-medium text-text-primary">{del.title}</p>
-                      {del.description && <p className="text-xs text-text-muted">{del.description}</p>}
-                    </div>
-                  </div>
-                ) : null
-              ))}
-            </div>
-            {editMode && (
-              <button onClick={addDeliverable}
-                className="mt-2 w-full py-2 rounded-lg text-xs text-brand-mint/70 hover:text-brand-mint transition-colors flex items-center justify-center gap-1.5"
-                style={{ border: "1px dashed rgba(0,245,160,0.2)" }}>
-                <IconPlus className="w-3.5 h-3.5" />Agregar entregable
+          {editMode && (
+            <div className="px-3 pb-3">
+              <button onClick={addStory}
+                className="w-full py-2 rounded-lg text-xs text-text-muted hover:text-brand-mint transition-colors flex items-center justify-center gap-1.5"
+                style={{ border: "1px dashed rgba(255,255,255,0.08)" }}>
+                <IconPlus className="w-3.5 h-3.5" />Agregar historia
               </button>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Deliverables */}
+          {(editMode || sprint.deliverables.some((d) => d.title)) && (
+            <div className="px-4 py-3 border-t border-white/[0.04]">
+              <p className="text-xs text-text-muted font-medium mb-2">Entregables</p>
+              <div className="space-y-1.5">
+                {sprint.deliverables.map((del) => (
+                  editMode ? (
+                    <div key={del.id} className="flex gap-2">
+                      <input type="text" value={del.title}
+                        onChange={(e) => updateDeliverable(del.id, "title", e.target.value)}
+                        placeholder="Entregable" className="input-premium flex-1 text-sm py-1" />
+                      <input type="text" value={del.description}
+                        onChange={(e) => updateDeliverable(del.id, "description", e.target.value)}
+                        placeholder="Descripcion" className="input-premium flex-1 text-sm py-1" />
+                      <button onClick={() => deleteDeliverable(del.id)}
+                        className="p-1 text-text-muted hover:text-red-400 transition-colors">
+                        <IconTrash className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : del.title ? (
+                    <p key={del.id} className="text-sm text-text-secondary flex items-start gap-2">
+                      <span className="text-brand-mint">→</span>
+                      {del.title}{del.description && <span className="text-text-muted">— {del.description}</span>}
+                    </p>
+                  ) : null
+                ))}
+              </div>
+              {editMode && (
+                <button onClick={addDeliverable}
+                  className="mt-2 text-xs text-text-muted hover:text-brand-mint transition-colors flex items-center gap-1">
+                  <IconPlus className="w-3 h-3" />Agregar entregable
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
+}
+
+// ─── Project Status Badge ────────────────────────────────────────────────────
+
+function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
+  const cfg: Record<ProjectStatus, { label: string; cls: string }> = {
+    borrador: { label: "Borrador", cls: "text-zinc-400 bg-zinc-400/10 border-zinc-400/20" },
+    activo: { label: "Activo", cls: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
+    completado: { label: "Completado", cls: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
+  };
+  const c = cfg[status];
+  return <span className={`px-2 py-0.5 rounded text-xs font-medium border ${c.cls}`}>{c.label}</span>;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -679,7 +632,6 @@ export default function ScrumTab() {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // New project form
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newClient, setNewClient] = useState("");
@@ -706,7 +658,7 @@ export default function ScrumTab() {
   };
 
   const handleGenerate = async () => {
-    if (!newDesc.trim()) { addToast("error", "Describí el proyecto"); return; }
+    if (!newDesc.trim()) { addToast("error", "Describi el proyecto"); return; }
     setGenerating(true);
     try {
       const data = await generateScrum(newDesc);
@@ -731,13 +683,7 @@ export default function ScrumTab() {
     if (!localData) return;
     setSaving(true);
     try {
-      const saved = await saveScrum(
-        current?.project_name || newName,
-        current?.client_name || newClient,
-        current?.description || newDesc,
-        localData,
-        current?.id || undefined,
-      );
+      const saved = await saveScrum(current?.project_name || newName, current?.client_name || newClient, current?.description || newDesc, localData, current?.id || undefined);
       addToast("success", "Proyecto guardado");
       await loadList();
       setCurrent(saved);
@@ -762,19 +708,16 @@ export default function ScrumTab() {
       const updated = await updateScrumStatus(current.id, status);
       setCurrent(updated);
       setProjects((p) => p.map((x) => x.id === updated.id ? { ...x, status: updated.status } : x));
-      addToast("success", status === "activo" ? "Proyecto activado — ya aparece en Seguimiento" : status === "completado" ? "Proyecto completado" : "Proyecto vuelto a borrador");
+      addToast("success", status === "activo" ? "Proyecto activado" : status === "completado" ? "Proyecto completado" : "Vuelto a borrador");
     } catch { addToast("error", "Error al cambiar estado"); }
   };
 
   const handleExportPDF = async () => {
     if (!current || !localData) return;
     setExporting(true);
-    try {
-      await exportToPDF({ ...current, data: localData });
-    } catch (e) {
-      addToast("error", "Error al exportar PDF");
-      console.error(e);
-    } finally { setExporting(false); }
+    try { await exportToPDF({ ...current, data: localData }); }
+    catch (e) { addToast("error", "Error al exportar PDF"); console.error(e); }
+    finally { setExporting(false); }
   };
 
   const deleteSprint = (id: string) => {
@@ -788,48 +731,48 @@ export default function ScrumTab() {
     setLocalData({ ...localData, sprints: [...localData.sprints, emptySprint(num)] });
   };
 
-  // Summary stats
   const totalPoints = localData?.sprints.reduce((t, s) => t + sprintPoints(s), 0) ?? 0;
   const totalDone = localData?.sprints.reduce((t, s) => t + s.stories.filter((x) => x.status === "completada").length, 0) ?? 0;
   const totalStories = localData?.sprints.reduce((t, s) => t + s.stories.length, 0) ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-text-primary tracking-tight">Sprints Scrum</h2>
-          <p className="text-sm text-text-muted mt-1">Planificá sprints con IA o manualmente y exportá a PDF</p>
+          <h2 className="text-xl font-semibold text-text-primary tracking-tight">Planificacion</h2>
+          <p className="text-sm text-text-muted mt-0.5">Sprints con IA o manuales</p>
         </div>
         <button onClick={() => { setIsCreating(true); setCurrent(null); setLocalData(null); setEditMode(false); setNewName(""); setNewClient(""); setNewDesc(""); setMode("ai"); }}
-          className="btn-primary flex items-center gap-2 px-4 py-2 text-sm">
+          className="btn-primary flex items-center gap-2 text-sm">
           <IconPlus className="w-4 h-4" />Nuevo proyecto
         </button>
       </div>
 
-      <div className="grid grid-cols-[260px_1fr] gap-6">
-        {/* Sidebar */}
-        <div className="space-y-2">
-          <p className="section-title mb-3">Proyectos guardados</p>
+      <div className="grid grid-cols-[240px_1fr] gap-5">
+        {/* Project list sidebar */}
+        <div className="space-y-1">
+          <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-2 px-1">Proyectos</p>
           {loadingList ? (
             <div className="flex justify-center py-8"><IconLoader className="w-5 h-5 text-text-muted" /></div>
           ) : projects.length === 0 ? (
-            <div className="glass-card p-5 text-center"><p className="text-xs text-text-muted">No hay proyectos aun</p></div>
+            <p className="text-sm text-text-muted text-center py-6">Sin proyectos</p>
           ) : projects.map((p) => (
             <div key={p.id} onClick={() => openProject(p.id)}
-              className={`glass-card-hover p-3.5 cursor-pointer group ${current?.id === p.id ? "border-brand-mint/25" : ""}`}
-              style={current?.id === p.id ? { borderColor: "rgba(0,245,160,0.2)" } : {}}>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-text-primary truncate">{p.project_name}</p>
-                  {p.client_name && <p className="text-[10px] text-text-muted truncate">{p.client_name}</p>}
-                  <p className="text-[10px] text-text-muted mt-0.5">{formatDate(p.created_at)}</p>
+              className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                current?.id === p.id ? "bg-brand-mint/10 text-brand-mint" : "hover:bg-white/[0.04] text-text-primary"
+              }`}>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{p.project_name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  {p.client_name && <span className="text-xs text-text-muted truncate">{p.client_name}</span>}
+                  <ProjectStatusBadge status={p.status} />
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}
-                  className="p-1 rounded text-text-muted hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
-                  <IconTrash className="w-3.5 h-3.5" />
-                </button>
               </div>
+              <button onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}
+                className="p-1 rounded text-text-muted hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
+                <IconTrash className="w-3.5 h-3.5" />
+              </button>
             </div>
           ))}
         </div>
@@ -838,181 +781,167 @@ export default function ScrumTab() {
         <div className="min-w-0">
           {/* New project form */}
           {isCreating && (
-            <div className="space-y-4">
-              <div className="glass-card p-6 space-y-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <IconSparkles className="w-5 h-5 text-brand-mint" />
-                  <h3 className="text-base font-semibold text-text-primary">Nuevo plan de sprints</h3>
-                </div>
-
-                {/* Mode toggle */}
-                <div className="flex gap-2">
-                  {(["ai", "manual"] as const).map((m) => (
-                    <button key={m} onClick={() => setMode(m)}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${mode === m ? "bg-brand-mint text-surface-black" : "bg-white/4 text-text-muted hover:text-text-primary"}`}>
-                      {m === "ai" ? "✦ Generar con IA" : "✎ Manual"}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="section-title block mb-1.5">Nombre del proyecto</label>
-                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
-                      placeholder="App de delivery, ERP..." className="input-premium w-full text-sm" />
-                  </div>
-                  <div>
-                    <label className="section-title block mb-1.5">Cliente (opcional)</label>
-                    <input type="text" value={newClient} onChange={(e) => setNewClient(e.target.value)}
-                      placeholder="Nombre del cliente" className="input-premium w-full text-sm" />
-                  </div>
-                </div>
-
-                {mode === "ai" && (
-                  <>
-                    <div>
-                      <label className="section-title block mb-1.5">Descripción del proyecto</label>
-                      <textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={5}
-                        placeholder="Describí el proyecto: funcionalidades, tecnologías, equipo, restricciones, objetivos de negocio..."
-                        className="input-premium w-full text-sm resize-none" />
-                    </div>
-                    <button onClick={handleGenerate} disabled={generating || !newDesc.trim()}
-                      className="btn-primary flex items-center gap-2 px-5 py-2.5 text-sm disabled:opacity-50">
-                      {generating ? <><IconLoader className="w-4 h-4" />Generando sprints...</> : <><IconSparkles className="w-4 h-4" />Generar plan de sprints</>}
-                    </button>
-                  </>
-                )}
-
-                {mode === "manual" && (
-                  <button onClick={handleStartManual}
-                    className="btn-primary flex items-center gap-2 px-5 py-2.5 text-sm">
-                    <IconEdit className="w-4 h-4" />Crear en blanco
-                  </button>
-                )}
+            <div className="rounded-lg p-5 space-y-4" style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="flex items-center gap-2">
+                <IconSparkles className="w-5 h-5 text-brand-mint" />
+                <h3 className="text-base font-semibold text-text-primary">Nuevo plan de sprints</h3>
               </div>
+
+              {/* Mode toggle */}
+              <div className="flex gap-1 p-0.5 rounded-lg w-fit" style={{ background: "rgba(255,255,255,0.04)" }}>
+                {(["ai", "manual"] as const).map((m) => (
+                  <button key={m} onClick={() => setMode(m)}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                      mode === m ? "bg-brand-mint text-surface-black shadow-sm" : "text-text-muted hover:text-text-primary"
+                    }`}>
+                    {m === "ai" ? "Generar con IA" : "Manual"}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-text-muted font-medium block mb-1">Proyecto</label>
+                  <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
+                    placeholder="App de delivery, ERP..." className="input-premium w-full text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-text-muted font-medium block mb-1">Cliente</label>
+                  <input type="text" value={newClient} onChange={(e) => setNewClient(e.target.value)}
+                    placeholder="Opcional" className="input-premium w-full text-sm" />
+                </div>
+              </div>
+
+              {mode === "ai" && (
+                <>
+                  <div>
+                    <label className="text-xs text-text-muted font-medium block mb-1">Descripcion del proyecto</label>
+                    <textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={4}
+                      placeholder="Funcionalidades, tecnologias, equipo, restricciones..."
+                      className="input-premium w-full text-sm resize-none" />
+                  </div>
+                  <button onClick={handleGenerate} disabled={generating || !newDesc.trim()}
+                    className="btn-primary flex items-center gap-2 text-sm disabled:opacity-50">
+                    {generating ? <><IconLoader className="w-4 h-4" />Generando...</> : <><IconSparkles className="w-4 h-4" />Generar sprints</>}
+                  </button>
+                </>
+              )}
+
+              {mode === "manual" && (
+                <button onClick={handleStartManual} className="btn-primary flex items-center gap-2 text-sm">
+                  <IconEdit className="w-4 h-4" />Crear en blanco
+                </button>
+              )}
             </div>
           )}
 
           {/* Project view */}
           {localData && !isCreating && (
-            <div className="space-y-5">
-              {/* Project header */}
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
+            <div className="space-y-4">
+              {/* Project header bar */}
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3 min-w-0">
                   {editMode ? (
-                    <div className="space-y-2">
-                      <input type="text" value={current?.project_name ?? newName}
-                        onChange={(e) => setCurrent((c) => c ? { ...c, project_name: e.target.value } : c)}
-                        className="input-premium text-lg font-semibold w-full" />
-                      <input type="text" value={current?.client_name ?? newClient}
-                        onChange={(e) => setCurrent((c) => c ? { ...c, client_name: e.target.value } : c)}
-                        placeholder="Cliente..." className="input-premium text-sm w-full" />
-                    </div>
+                    <input type="text" value={current?.project_name ?? newName}
+                      onChange={(e) => setCurrent((c) => c ? { ...c, project_name: e.target.value } : c)}
+                      className="input-premium text-lg font-semibold py-1 w-64" />
                   ) : (
-                    <>
-                      <h3 className="text-lg font-semibold text-text-primary">{current?.project_name}</h3>
-                      {current?.client_name && <p className="text-xs text-text-muted mt-0.5">{current.client_name}</p>}
-                    </>
+                    <h3 className="text-lg font-semibold text-text-primary">{current?.project_name}</h3>
+                  )}
+                  {current?.status && <ProjectStatusBadge status={current.status} />}
+                  {current?.client_name && !editMode && (
+                    <span className="text-sm text-text-muted">{current.client_name}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                  {/* Status badge */}
-                  {current?.status && (
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
-                      current.status === "activo" ? "text-brand-mint border-brand-mint/30 bg-brand-mint/10" :
-                      current.status === "completado" ? "text-blue-400 border-blue-400/30 bg-blue-400/10" :
-                      "text-text-muted border-white/10 bg-white/4"
-                    }`}>
-                      {current.status === "activo" ? "● Activo" : current.status === "completado" ? "✓ Completado" : "Borrador"}
-                    </span>
-                  )}
-                  {/* Status action buttons */}
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 flex-wrap">
                   {current?.id && current.status === "borrador" && (
                     <button onClick={() => handleSetStatus("activo")}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all text-brand-mint border-brand-mint/30 bg-brand-mint/8 hover:bg-brand-mint/15">
-                      Activar proyecto
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-emerald-400 hover:bg-emerald-400/10"
+                      style={{ border: "1px solid rgba(52,211,153,0.2)" }}>
+                      Activar
                     </button>
                   )}
                   {current?.id && current.status === "activo" && (
                     <button onClick={() => handleSetStatus("completado")}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all text-blue-400 border-blue-400/30 bg-blue-400/8 hover:bg-blue-400/15">
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-blue-400 hover:bg-blue-400/10"
+                      style={{ border: "1px solid rgba(96,165,250,0.2)" }}>
                       Completar
                     </button>
                   )}
                   {current?.id && current.status !== "borrador" && (
                     <button onClick={() => handleSetStatus("borrador")}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all text-text-muted border-white/10 bg-white/4 hover:text-text-primary">
-                      Volver a borrador
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-text-muted hover:text-text-primary"
+                      style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
+                      Borrador
                     </button>
                   )}
                   <button onClick={() => setEditMode(!editMode)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${editMode ? "text-brand-mint border-brand-mint/30 bg-brand-mint/8" : "text-text-muted border-white/8 bg-white/4 hover:text-text-primary"}`}>
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      editMode ? "text-brand-mint bg-brand-mint/10" : "text-text-muted hover:text-text-primary"
+                    }`} style={{ border: `1px solid ${editMode ? "rgba(74,234,170,0.2)" : "rgba(255,255,255,0.06)"}` }}>
                     <IconEdit className="w-3.5 h-3.5" />{editMode ? "Vista" : "Editar"}
                   </button>
                   {editMode && (
                     <button onClick={handleSave} disabled={saving}
-                      className="btn-primary flex items-center gap-1.5 px-3 py-1.5 text-xs">
+                      className="btn-primary flex items-center gap-1.5 text-xs">
                       {saving ? <IconLoader className="w-3.5 h-3.5" /> : <IconSave className="w-3.5 h-3.5" />}
                       Guardar
                     </button>
                   )}
                   <button onClick={handleExportPDF} disabled={exporting}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all text-red-400 border-red-400/20 bg-red-400/5 hover:bg-red-400/12 disabled:opacity-50">
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-red-400 hover:bg-red-400/10 disabled:opacity-50"
+                    style={{ border: "1px solid rgba(248,113,113,0.2)" }}>
                     {exporting ? <IconLoader className="w-3.5 h-3.5" /> : <IconPDF className="w-3.5 h-3.5" />}
                     PDF
                   </button>
                 </div>
               </div>
 
-              {/* Stats bar */}
-              <div className="grid grid-cols-4 gap-3">
-                {[
-                  { label: "Sprints", value: localData.sprints.length },
-                  { label: "Story Points", value: `${totalPoints} pts` },
-                  { label: "User Stories", value: totalStories },
-                  { label: "Completadas", value: `${totalDone}/${totalStories}` },
-                ].map(({ label, value }) => (
-                  <div key={label} className="glass-card p-3 text-center">
-                    <p className="text-lg font-semibold text-brand-mint">{value}</p>
-                    <p className="text-[10px] text-text-muted mt-0.5">{label}</p>
-                  </div>
-                ))}
+              {/* Stats row */}
+              <div className="flex items-center gap-6 px-1 text-sm">
+                <div><span className="font-semibold text-text-primary">{localData.sprints.length}</span> <span className="text-text-muted">sprints</span></div>
+                <div><span className="font-semibold text-brand-mint">{totalPoints}</span> <span className="text-text-muted">pts</span></div>
+                <div><span className="font-semibold text-text-primary">{totalStories}</span> <span className="text-text-muted">historias</span></div>
+                <div><span className="font-semibold text-emerald-400">{totalDone}</span><span className="text-text-muted">/{totalStories} completadas</span></div>
+                {localData.recommended_velocity > 0 && (
+                  <div className="text-text-muted">vel: <span className="text-text-secondary">{localData.recommended_velocity} pts/sprint</span></div>
+                )}
               </div>
 
               {/* Summary */}
               {editMode ? (
-                <div className="glass-card p-4 space-y-2">
-                  <p className="section-title">Resumen del proyecto</p>
+                <div className="rounded-lg p-4 space-y-3" style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
                   <textarea value={localData.summary}
                     onChange={(e) => setLocalData({ ...localData, summary: e.target.value })}
-                    rows={3} className="input-premium w-full text-sm resize-none"
+                    rows={2} className="input-premium w-full text-sm resize-none"
                     placeholder="Resumen ejecutivo..." />
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <p className="section-title mb-1">Velocidad recomendada (pts/sprint)</p>
+                      <label className="text-xs text-text-muted font-medium block mb-1">Velocidad (pts/sprint)</label>
                       <input type="number" value={localData.recommended_velocity}
                         onChange={(e) => setLocalData({ ...localData, recommended_velocity: Number(e.target.value) })}
                         className="input-premium w-full text-sm" />
                     </div>
                     <div>
-                      <p className="section-title mb-1">Notas</p>
+                      <label className="text-xs text-text-muted font-medium block mb-1">Notas</label>
                       <input type="text" value={localData.notes ?? ""}
                         onChange={(e) => setLocalData({ ...localData, notes: e.target.value })}
-                        placeholder="Notas, riesgos, dependencias..."
+                        placeholder="Riesgos, dependencias..."
                         className="input-premium w-full text-sm" />
                     </div>
                   </div>
                 </div>
               ) : localData.summary && (
-                <div className="glass-card p-4">
-                  <p className="text-sm text-text-secondary leading-relaxed">{localData.summary}</p>
-                  {localData.notes && <p className="text-xs text-text-muted mt-2 italic">{localData.notes}</p>}
+                <div className="text-sm text-text-secondary px-1 leading-relaxed">
+                  {localData.summary}
+                  {localData.notes && <span className="text-text-muted ml-2">· {localData.notes}</span>}
                 </div>
               )}
 
               {/* Sprints */}
               <div className="space-y-3">
-                <p className="section-title">Sprints ({localData.sprints.length})</p>
                 {localData.sprints.map((sprint) => (
                   <SprintCard key={sprint.id} sprint={sprint} editMode={editMode}
                     onUpdate={(s) => {
@@ -1024,8 +953,8 @@ export default function ScrumTab() {
                 ))}
                 {editMode && (
                   <button onClick={addSprint}
-                    className="w-full py-3 rounded-xl text-sm text-brand-mint/70 hover:text-brand-mint transition-colors flex items-center justify-center gap-2"
-                    style={{ border: "1px dashed rgba(0,245,160,0.2)" }}>
+                    className="w-full py-2.5 rounded-lg text-sm text-text-muted hover:text-brand-mint transition-colors flex items-center justify-center gap-2"
+                    style={{ border: "1px dashed rgba(255,255,255,0.08)" }}>
                     <IconPlus className="w-4 h-4" />Agregar sprint
                   </button>
                 )}
@@ -1035,10 +964,10 @@ export default function ScrumTab() {
 
           {/* Empty state */}
           {!isCreating && !localData && (
-            <div className="glass-card p-12 text-center">
-              <div className="text-text-muted mb-4"><IconSparkles className="w-10 h-10 mx-auto" /></div>
-              <h3 className="text-sm font-semibold text-text-primary mb-2">Sin proyecto seleccionado</h3>
-              <p className="text-xs text-text-muted">Seleccioná un proyecto de la lista o creá uno nuevo.</p>
+            <div className="rounded-lg p-12 text-center" style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="text-text-muted mb-3"><IconSparkles className="w-8 h-8 mx-auto" /></div>
+              <h3 className="text-sm font-medium text-text-primary">Sin proyecto seleccionado</h3>
+              <p className="text-sm text-text-muted mt-1">Selecciona un proyecto o crea uno nuevo.</p>
             </div>
           )}
         </div>
