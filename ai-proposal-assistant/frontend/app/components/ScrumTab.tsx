@@ -160,12 +160,13 @@ async function exportToPDF(project: ScrumFull) {
   const M = 15;
   const CW = PW - M * 2;
 
-  const BLACK = [15, 15, 30] as const;
-  const MINT = [0, 200, 130] as const;
-  const GRAY = [120, 120, 140] as const;
-  const LIGHT = [240, 240, 248] as const;
-  const WHITE = [255, 255, 255] as const;
-  const DARK_BG = [28, 28, 54] as const;
+  type RGB = [number, number, number];
+  const BLACK: RGB = [15, 15, 30];
+  const MINT: RGB = [0, 200, 130];
+  const GRAY: RGB = [120, 120, 140];
+  const LIGHT: RGB = [240, 240, 248];
+  const WHITE: RGB = [255, 255, 255];
+  const DARK_BG: RGB = [28, 28, 54];
 
   const setColor = (c: readonly number[]) => doc.setTextColor(c[0], c[1], c[2]);
   const setFill = (c: readonly number[]) => doc.setFillColor(c[0], c[1], c[2]);
@@ -195,7 +196,7 @@ async function exportToPDF(project: ScrumFull) {
   doc.text(project.project_name, M, y);
 
   y += 7;
-  setColor([170, 170, 200] as const);
+  setColor([170, 170, 200] as [number,number,number]);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   const meta: string[] = [];
@@ -258,7 +259,7 @@ async function exportToPDF(project: ScrumFull) {
     doc.setFont("helvetica", "bold");
     doc.text(`Sprint ${sprint.number}: ${sprint.name}`, M + 4, y + 7);
 
-    setColor([170, 170, 200] as const);
+    setColor([170, 170, 200] as [number,number,number]);
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text(`${points} pts  ·  ${sprint.stories.length} historias  ·  ${sprint.duration_weeks} semanas  ·  ${completedStories}/${sprint.stories.length} completadas`, PW - M - 4, y + 7, { align: "right" });
@@ -329,7 +330,7 @@ async function exportToPDF(project: ScrumFull) {
     if (sprint.deliverables.filter((d) => d.title).length > 0) {
       if (y > PH - 30) { doc.addPage(); y = M; }
 
-      setColor([80, 80, 100] as const);
+      setColor([80, 80, 100] as [number,number,number]);
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
       doc.text("Entregables del sprint:", M, y + 4);
@@ -350,7 +351,7 @@ async function exportToPDF(project: ScrumFull) {
   // ── Notes ──
   if (project.data.notes) {
     if (y > PH - 30) { doc.addPage(); y = M; }
-    setColor([80, 80, 100] as const);
+    setColor([80, 80, 100] as [number,number,number]);
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.text("Notas y consideraciones:", M, y);
@@ -362,10 +363,10 @@ async function exportToPDF(project: ScrumFull) {
   }
 
   // ── Footer on all pages ──
-  const totalPages = doc.getNumberOfPages();
+  const totalPages = (doc as unknown as { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    setColor([150, 150, 170] as const);
+    setColor([150, 150, 170] as [number,number,number]);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.text("CruzNegraDev LLC  ·  Victor Manuel Moreira", M, PH - 8);
@@ -746,13 +747,6 @@ export default function ScrumTab() {
     finally { setSaving(false); }
   };
 
-  const handleSaveInline = async (newData: ScrumData) => {
-    if (!current?.id) { setLocalData(newData); return; }
-    setLocalData(newData);
-    try { await updateScrumData(current.id, newData); }
-    catch { addToast("error", "Error al guardar cambios"); }
-  };
-
   const handleDelete = async (id: string) => {
     try {
       await deleteScrum(id);
@@ -771,13 +765,6 @@ export default function ScrumTab() {
       addToast("error", "Error al exportar PDF");
       console.error(e);
     } finally { setExporting(false); }
-  };
-
-  const updateSprint = (id: string, sprint: Sprint) => {
-    if (!localData) return;
-    const updated = { ...localData, sprints: localData.sprints.map((s) => s.id === id ? sprint : s) };
-    updated.total_estimated_points = updated.sprints.reduce((t, sp) => t + sprintPoints(sp), 0);
-    setLocalData(updated);
   };
 
   const deleteSprint = (id: string) => {
