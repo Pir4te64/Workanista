@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   ReactFlow,
+  ReactFlowProvider,
   Controls,
   MiniMap,
   Background,
@@ -13,6 +14,7 @@ import {
   Position,
   BackgroundVariant,
   useReactFlow,
+  getNodesBounds,
   type Node,
   type Edge,
   type Connection,
@@ -35,16 +37,95 @@ import { listScrum, type ScrumSummary } from "@/lib/scrum-api";
 // ─── Color palette for nodes ─────────────────────────────────────────────────
 
 const NODE_COLORS: Record<string, { bg: string; border: string; accent: string; text: string }> = {
-  blue:   { bg: "rgba(59,130,246,0.1)",   border: "rgba(59,130,246,0.35)",  accent: "#3B82F6", text: "#1E40AF" },
-  green:  { bg: "rgba(34,197,94,0.1)",    border: "rgba(34,197,94,0.35)",   accent: "#22C55E", text: "#166534" },
-  purple: { bg: "rgba(168,85,247,0.1)",   border: "rgba(168,85,247,0.35)",  accent: "#A855F7", text: "#6B21A8" },
-  orange: { bg: "rgba(249,115,22,0.1)",   border: "rgba(249,115,22,0.35)",  accent: "#F97316", text: "#9A3412" },
-  red:    { bg: "rgba(239,68,68,0.1)",    border: "rgba(239,68,68,0.35)",   accent: "#EF4444", text: "#991B1B" },
-  cyan:   { bg: "rgba(6,182,212,0.1)",    border: "rgba(6,182,212,0.35)",   accent: "#06B6D4", text: "#155E75" },
-  pink:   { bg: "rgba(236,72,153,0.1)",   border: "rgba(236,72,153,0.35)",  accent: "#EC4899", text: "#9D174D" },
+  blue:   { bg: "rgba(59,130,246,0.12)",   border: "rgba(59,130,246,0.35)",  accent: "#3B82F6", text: "#1E40AF" },
+  green:  { bg: "rgba(34,197,94,0.12)",    border: "rgba(34,197,94,0.35)",   accent: "#22C55E", text: "#166534" },
+  purple: { bg: "rgba(168,85,247,0.12)",   border: "rgba(168,85,247,0.35)",  accent: "#A855F7", text: "#6B21A8" },
+  orange: { bg: "rgba(249,115,22,0.12)",   border: "rgba(249,115,22,0.35)",  accent: "#F97316", text: "#9A3412" },
+  red:    { bg: "rgba(239,68,68,0.12)",    border: "rgba(239,68,68,0.35)",   accent: "#EF4444", text: "#991B1B" },
+  cyan:   { bg: "rgba(6,182,212,0.12)",    border: "rgba(6,182,212,0.35)",   accent: "#06B6D4", text: "#155E75" },
+  pink:   { bg: "rgba(236,72,153,0.12)",   border: "rgba(236,72,153,0.35)",  accent: "#EC4899", text: "#9D174D" },
+};
+
+const COLOR_NAMES: Record<string, string> = {
+  blue: "Azul", green: "Verde", purple: "Morado", orange: "Naranja",
+  red: "Rojo", cyan: "Cyan", pink: "Rosa",
 };
 
 const DEFAULT_COLOR = NODE_COLORS.blue;
+
+// ─── Context Menu ────────────────────────────────────────────────────────────
+
+interface ContextMenuData {
+  nodeId: string;
+  x: number;
+  y: number;
+}
+
+function NodeContextMenu({
+  data, onClose, onEdit, onChangeColor, onDuplicate, onAddChild, onDelete,
+}: {
+  data: ContextMenuData;
+  onClose: () => void;
+  onEdit: (id: string) => void;
+  onChangeColor: (id: string, color: string) => void;
+  onDuplicate: (id: string) => void;
+  onAddChild: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [showColors, setShowColors] = useState(false);
+
+  useEffect(() => {
+    const handler = () => onClose();
+    window.addEventListener("click", handler);
+    return () => window.removeEventListener("click", handler);
+  }, [onClose]);
+
+  const menuStyle: React.CSSProperties = {
+    position: "fixed", left: data.x, top: data.y, zIndex: 1000,
+    background: "#fff", borderRadius: 10, padding: 4,
+    boxShadow: "0 8px 30px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1)",
+    border: "1px solid rgba(0,0,0,0.08)", minWidth: 180,
+  };
+
+  const itemClass = "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors hover:bg-gray-100 text-gray-700";
+
+  return (
+    <div style={menuStyle} onClick={(e) => e.stopPropagation()}>
+      <button className={itemClass} onClick={() => { onEdit(data.nodeId); onClose(); }}>
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+        Editar texto
+      </button>
+      <button className={itemClass} onClick={() => setShowColors(!showColors)}>
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0110 10" /><path d="M2 12h20" /></svg>
+        Cambiar color
+        <svg className="w-3 h-3 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="9,18 15,12 9,6" /></svg>
+      </button>
+      {showColors && (
+        <div className="flex gap-1.5 px-3 py-2">
+          {Object.entries(NODE_COLORS).map(([key, c]) => (
+            <button key={key} title={COLOR_NAMES[key]}
+              className="w-6 h-6 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform"
+              style={{ background: c.accent }}
+              onClick={() => { onChangeColor(data.nodeId, key); onClose(); }} />
+          ))}
+        </div>
+      )}
+      <button className={itemClass} onClick={() => { onAddChild(data.nodeId); onClose(); }}>
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+        Agregar sub-pantalla
+      </button>
+      <button className={itemClass} onClick={() => { onDuplicate(data.nodeId); onClose(); }}>
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+        Duplicar
+      </button>
+      <div className="border-t border-gray-100 my-1" />
+      <button className={`${itemClass} !text-red-500 hover:!bg-red-50`} onClick={() => { onDelete(data.nodeId); onClose(); }}>
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polyline points="3,6 5,6 21,6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+        Eliminar
+      </button>
+    </div>
+  );
+}
 
 // ─── Custom Node (horizontal tree — handles left/right) ──────────────────────
 
@@ -54,10 +135,21 @@ function CustomNode({ id, data, selected }: NodeProps) {
   const colorKey = String(data.color ?? "blue");
   const c = NODE_COLORS[colorKey] ?? DEFAULT_COLOR;
   const [collapsed, setCollapsed] = useState(!!data._collapsed);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(!!data._editing);
   const [editLabel, setEditLabel] = useState(label);
   const [editDesc, setEditDesc] = useState(description);
   const { setNodes } = useReactFlow();
+
+  // Sync editing state from external trigger (context menu)
+  useEffect(() => {
+    if (data._editing && !editing) {
+      setEditLabel(label);
+      setEditDesc(description);
+      setEditing(true);
+      // Clear the flag
+      setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, _editing: false } } : n));
+    }
+  }, [data._editing, editing, id, label, description, setNodes]);
 
   const toggleCollapse = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -80,22 +172,22 @@ function CustomNode({ id, data, selected }: NodeProps) {
 
   return (
     <div
-      className="rounded-xl min-w-[140px] max-w-[260px] shadow-xl transition-all duration-200"
+      className="rounded-xl min-w-[150px] max-w-[260px] transition-all duration-200"
       style={{
         background: c.bg,
         border: `2px solid ${selected ? c.accent : c.border}`,
-        boxShadow: selected ? `0 0 20px ${c.accent}40` : `0 4px 20px rgba(0,0,0,0.15)`,
+        boxShadow: selected ? `0 0 20px ${c.accent}40, 0 4px 16px rgba(0,0,0,0.1)` : `0 2px 12px rgba(0,0,0,0.08)`,
         backdropFilter: "blur(12px)",
       }}
     >
       <Handle type="target" position={Position.Left} id="left"
-        style={{ background: c.accent, width: 10, height: 10, border: `2px solid ${c.bg}` }} />
+        style={{ background: c.accent, width: 10, height: 10, border: "2px solid #fff" }} />
 
       <div className="px-3 py-2">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.accent }} />
           {editing ? (
-            <input className="text-sm font-bold bg-transparent border-b outline-none flex-1 min-w-0"
+            <input className="text-sm font-bold bg-white/80 border rounded px-1 outline-none flex-1 min-w-0"
               style={{ color: c.text, borderColor: c.accent }}
               value={editLabel} onChange={(e) => setEditLabel(e.target.value)}
               onBlur={commitEdit} onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); }}
@@ -104,8 +196,8 @@ function CustomNode({ id, data, selected }: NodeProps) {
             <p className="text-sm font-bold leading-tight flex-1 cursor-text" style={{ color: c.text }}
               onDoubleClick={startEditing}>{label}</p>
           )}
-          <button onClick={toggleCollapse} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity p-0.5"
-            style={{ color: c.text }}>
+          <button onClick={toggleCollapse} className="shrink-0 opacity-50 hover:opacity-100 transition-opacity p-0.5"
+            style={{ color: "#666" }}>
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               {collapsed ? <polyline points="6,9 12,15 18,9" /> : <polyline points="6,15 12,9 18,15" />}
             </svg>
@@ -113,18 +205,18 @@ function CustomNode({ id, data, selected }: NodeProps) {
         </div>
         {!collapsed && (
           editing ? (
-            <textarea className="text-[11px] leading-relaxed ml-[18px] mt-1 bg-transparent border-b outline-none w-full resize-none"
-              style={{ color: "rgba(100,100,100,0.8)", borderColor: c.border }}
+            <textarea className="text-[11px] leading-relaxed ml-[18px] mt-1 bg-white/80 border rounded px-1 outline-none w-full resize-none"
+              style={{ color: "#555", borderColor: c.border }}
               value={editDesc} onChange={(e) => setEditDesc(e.target.value)}
               onBlur={commitEdit} rows={2} />
           ) : (
             description ? (
-              <p className="text-[11px] leading-relaxed ml-[18px] mt-1 cursor-text" style={{ color: "rgba(100,100,100,0.8)" }}
+              <p className="text-[11px] leading-relaxed ml-[18px] mt-1 cursor-text" style={{ color: "#777" }}
                 onDoubleClick={startEditing}>
                 {description}
               </p>
             ) : (
-              <p className="text-[11px] leading-relaxed ml-[18px] mt-1 cursor-text italic" style={{ color: "rgba(150,150,150,0.5)" }}
+              <p className="text-[11px] leading-relaxed ml-[18px] mt-1 cursor-text italic" style={{ color: "#aaa" }}
                 onDoubleClick={startEditing}>
                 Doble click para editar
               </p>
@@ -134,7 +226,7 @@ function CustomNode({ id, data, selected }: NodeProps) {
       </div>
 
       <Handle type="source" position={Position.Right} id="right"
-        style={{ background: c.accent, width: 10, height: 10, border: `2px solid ${c.bg}` }} />
+        style={{ background: c.accent, width: 10, height: 10, border: "2px solid #fff" }} />
     </div>
   );
 }
@@ -197,73 +289,6 @@ const IconList = ({ className = "w-4 h-4" }: { className?: string }) => (
   </svg>
 );
 
-// ─── PDF Export ───────────────────────────────────────────────────────────────
-
-async function exportDiagramToPDF(
-  containerRef: React.RefObject<HTMLDivElement | null>,
-  title: string
-) {
-  const { toPng } = await import("html-to-image");
-  const jsPDF = (await import("jspdf")).default;
-
-  const el = containerRef.current?.querySelector(".react-flow__viewport") as HTMLElement | null;
-  if (!el) return;
-
-  const dataUrl = await toPng(el, {
-    backgroundColor: "#F5F3EF",
-    pixelRatio: 2,
-    filter: (node) => {
-      const cls = (node as HTMLElement).classList;
-      if (!cls) return true;
-      return !cls.contains("react-flow__controls") && !cls.contains("react-flow__panel") && !cls.contains("react-flow__minimap");
-    },
-  });
-
-  const img = new Image();
-  img.src = dataUrl;
-  await new Promise((resolve) => { img.onload = resolve; });
-
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-  const PW = doc.internal.pageSize.getWidth();
-  const PH = doc.internal.pageSize.getHeight();
-  const M = 10;
-
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 30, 30);
-  doc.text("CRUZNEGRA DEV LLC", M, M + 4);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 100, 100);
-  doc.text(new Date().toLocaleDateString("es-AR"), PW - M, M + 4, { align: "right" });
-
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(20, 20, 20);
-  doc.text(title || "Diagrama de Flujo", M, M + 12);
-
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.3);
-  doc.line(M, M + 15, PW - M, M + 15);
-
-  const imgTop = M + 20;
-  const availW = PW - M * 2;
-  const availH = PH - imgTop - 15;
-  const ratio = Math.min(availW / img.width, availH / img.height);
-  const imgW = img.width * ratio;
-  const imgH = img.height * ratio;
-  const imgX = M + (availW - imgW) / 2;
-
-  doc.addImage(dataUrl, "PNG", imgX, imgTop, imgW, imgH);
-
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(150, 150, 150);
-  doc.text("CruzNegraDev LLC  |  Victor Manuel Moreira", M, PH - 6);
-  doc.text("1 / 1", PW - M, PH - 6, { align: "right" });
-
-  doc.save(`Diagrama_${title.replace(/\s+/g, "_") || "flow"}.pdf`);
-}
-
 // ─── Saved diagrams sidebar ──────────────────────────────────────────────────
 
 function DiagramList({
@@ -300,9 +325,9 @@ function DiagramList({
   );
 }
 
-// ─── Main DesignTab ──────────────────────────────────────────────────────────
+// ─── Inner Flow (needs ReactFlowProvider) ────────────────────────────────────
 
-export default function DesignTab() {
+function DesignTabInner() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [prompt, setPrompt] = useState("");
@@ -315,18 +340,85 @@ export default function DesignTab() {
   const [scrumProjects, setScrumProjects] = useState<ScrumSummary[]>([]);
   const [showList, setShowList] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
+  const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToast();
+  const reactFlowInstance = useReactFlow();
+
+  const edgeStyle = { stroke: "rgba(0,0,0,0.2)", strokeWidth: 2 };
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge({
-      ...params,
-      type: "smoothstep",
-      animated: true,
-      style: { stroke: "rgba(0,0,0,0.2)", strokeWidth: 2 },
+      ...params, type: "smoothstep", animated: true, style: edgeStyle,
     }, eds)),
     [setEdges]
   );
+
+  // Right-click on node
+  const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    setContextMenu({ nodeId: node.id, x: event.clientX, y: event.clientY });
+  }, []);
+
+  // Left-click on node also shows menu (single click)
+  const onNodeClick = useCallback((_event: React.MouseEvent, _node: Node) => {
+    // Single click selects — context menu is on right-click only
+  }, []);
+
+  // Close context menu on pane click
+  const onPaneClick = useCallback(() => { setContextMenu(null); }, []);
+
+  // Context menu actions
+  const handleContextEdit = (nodeId: string) => {
+    setNodes((nds) => nds.map((n) => n.id === nodeId ? { ...n, data: { ...n.data, _editing: true } } : n));
+  };
+
+  const handleContextChangeColor = (nodeId: string, color: string) => {
+    setNodes((nds) => nds.map((n) => n.id === nodeId ? { ...n, data: { ...n.data, color } } : n));
+  };
+
+  const handleContextDuplicate = (nodeId: string) => {
+    const orig = nodes.find((n) => n.id === nodeId);
+    if (!orig) return;
+    const newId = `n-${Date.now()}`;
+    const newNode: Node = {
+      ...orig,
+      id: newId,
+      position: { x: orig.position.x + 40, y: orig.position.y + 40 },
+      data: { ...orig.data, label: `${orig.data.label} (copia)` },
+      selected: false,
+    };
+    setNodes((nds) => [...nds, newNode]);
+  };
+
+  const handleContextAddChild = (nodeId: string) => {
+    const parent = nodes.find((n) => n.id === nodeId);
+    if (!parent) return;
+    const newId = `n-${Date.now()}`;
+    const newNode: Node = {
+      id: newId,
+      type: "custom",
+      position: { x: parent.position.x + 300, y: parent.position.y },
+      data: { label: "Nueva pantalla", description: "", color: parent.data.color || "blue" },
+    };
+    const newEdge: Edge = {
+      id: `e-${nodeId}-${newId}`,
+      source: nodeId,
+      target: newId,
+      sourceHandle: "right",
+      targetHandle: "left",
+      type: "smoothstep",
+      animated: true,
+      style: edgeStyle,
+    };
+    setNodes((nds) => [...nds, newNode]);
+    setEdges((eds) => [...eds, newEdge]);
+  };
+
+  const handleContextDelete = (nodeId: string) => {
+    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+  };
 
   // Load data
   useEffect(() => {
@@ -342,16 +434,14 @@ export default function DesignTab() {
     load();
   }, []);
 
-  // Add a new blank node on canvas
   const handleAddNode = () => {
     const id = `n-${Date.now()}`;
     const colors = Object.keys(NODE_COLORS);
     const color = colors[nodes.length % colors.length];
     const newNode: Node = {
-      id,
-      type: "custom",
+      id, type: "custom",
       position: { x: 100 + nodes.length * 50, y: 200 + nodes.length * 30 },
-      data: { label: "Nuevo paso", description: "Edita este nodo", color },
+      data: { label: "Nueva pantalla", description: "", color },
     };
     setNodes((prev) => [...prev, newNode]);
   };
@@ -362,25 +452,18 @@ export default function DesignTab() {
     try {
       const result = await generateDiagram(prompt);
       const flowNodes: Node[] = result.nodes.map((n: DiagramNode) => ({
-        id: n.id,
-        type: n.type || "custom",
-        position: n.position,
-        data: n.data,
+        id: n.id, type: n.type || "custom", position: n.position, data: n.data,
       }));
       const flowEdges: Edge[] = result.edges.map((e: DiagramEdge) => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        sourceHandle: "right",
-        targetHandle: "left",
-        type: e.type || "smoothstep",
-        animated: e.animated ?? true,
-        style: { stroke: "rgba(0,0,0,0.2)", strokeWidth: 2 },
+        id: e.id, source: e.source, target: e.target,
+        sourceHandle: "right", targetHandle: "left",
+        type: e.type || "smoothstep", animated: e.animated ?? true,
+        style: edgeStyle,
       }));
       setNodes(flowNodes);
       setEdges(flowEdges);
       setSelectedId(undefined);
-      addToast("success", "Diagrama generado");
+      addToast("success", "Mapa de pantallas generado");
     } catch (err) {
       console.error(err);
       addToast("error", "Error al generar el diagrama");
@@ -391,7 +474,7 @@ export default function DesignTab() {
 
   const handleLoadFromScrum = (project: ScrumSummary) => {
     setPrompt(
-      `Genera un diagrama de flujo del proyecto "${project.project_name}" para el cliente "${project.client_name}". Descripcion: ${project.description}`
+      `Genera el mapa de pantallas del proyecto "${project.project_name}" para el cliente "${project.client_name}". Descripcion: ${project.description}`
     );
   };
 
@@ -399,8 +482,7 @@ export default function DesignTab() {
     setSaving(true);
     try {
       const data = {
-        title,
-        description: prompt,
+        title, description: prompt,
         nodes: nodes.map((n) => ({ id: n.id, type: n.type, position: n.position, data: n.data })) as DiagramNode[],
         edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, type: e.type, animated: e.animated })) as DiagramEdge[],
       };
@@ -421,7 +503,7 @@ export default function DesignTab() {
       id: e.id, source: e.source, target: e.target,
       sourceHandle: "right", targetHandle: "left",
       type: e.type || "smoothstep", animated: e.animated ?? true,
-      style: { stroke: "rgba(0,0,0,0.2)", strokeWidth: 2 },
+      style: edgeStyle,
     })));
     setTitle(d.title);
     setPrompt(d.description || "");
@@ -437,16 +519,107 @@ export default function DesignTab() {
     } catch { addToast("error", "Error al eliminar"); }
   };
 
+  // ─── PDF Export (captures ALL nodes, not just viewport) ──────────────────
   const handleExportPDF = async () => {
     setExporting(true);
-    try { await exportDiagramToPDF(containerRef, title); addToast("success", "PDF exportado"); }
-    catch { addToast("error", "Error al exportar PDF"); }
-    finally { setExporting(false); }
+    try {
+      const { toPng } = await import("html-to-image");
+      const jsPDF = (await import("jspdf")).default;
+
+      if (nodes.length === 0) return;
+
+      // Calculate bounds of all nodes
+      const bounds = getNodesBounds(nodes);
+      const padding = 60;
+      const fullW = bounds.width + padding * 2;
+      const fullH = bounds.height + padding * 2;
+
+      // Save current viewport, then fit everything
+      const prevViewport = reactFlowInstance.getViewport();
+      reactFlowInstance.fitView({ padding: 0.1, duration: 0 });
+
+      // Wait for fitView to apply
+      await new Promise((r) => setTimeout(r, 200));
+
+      const el = containerRef.current?.querySelector(".react-flow__viewport") as HTMLElement | null;
+      if (!el) return;
+
+      // Capture with full dimensions
+      const dataUrl = await toPng(el, {
+        backgroundColor: "#F5F3EF",
+        pixelRatio: 2,
+        width: fullW,
+        height: fullH,
+        style: {
+          width: `${fullW}px`,
+          height: `${fullH}px`,
+          transform: `translate(${-bounds.x + padding}px, ${-bounds.y + padding}px) scale(1)`,
+        },
+        filter: (node) => {
+          const cls = (node as HTMLElement).classList;
+          if (!cls) return true;
+          return !cls.contains("react-flow__controls") && !cls.contains("react-flow__panel") && !cls.contains("react-flow__minimap");
+        },
+      });
+
+      // Restore previous viewport
+      reactFlowInstance.setViewport(prevViewport, { duration: 0 });
+
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((resolve) => { img.onload = resolve; });
+
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const PW = doc.internal.pageSize.getWidth();
+      const PH = doc.internal.pageSize.getHeight();
+      const M = 10;
+
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 30, 30);
+      doc.text("CRUZNEGRA DEV LLC", M, M + 4);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(new Date().toLocaleDateString("es-AR"), PW - M, M + 4, { align: "right" });
+
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(20, 20, 20);
+      doc.text(title || "Mapa de Pantallas", M, M + 12);
+
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(M, M + 15, PW - M, M + 15);
+
+      const imgTop = M + 20;
+      const availW = PW - M * 2;
+      const availH = PH - imgTop - 15;
+      const ratio = Math.min(availW / img.width, availH / img.height);
+      const imgW = img.width * ratio;
+      const imgH = img.height * ratio;
+      const imgX = M + (availW - imgW) / 2;
+
+      doc.addImage(dataUrl, "PNG", imgX, imgTop, imgW, imgH);
+
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(150, 150, 150);
+      doc.text("CruzNegraDev LLC  |  Victor Manuel Moreira", M, PH - 6);
+      doc.text("1 / 1", PW - M, PH - 6, { align: "right" });
+
+      doc.save(`Diagrama_${title.replace(/\s+/g, "_") || "flow"}.pdf`);
+      addToast("success", "PDF exportado");
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Error al exportar PDF");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleNew = () => { setNodes([]); setEdges([]); setTitle("Sin titulo"); setPrompt(""); setSelectedId(undefined); };
 
-  const btnStyle = { background: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.12)", color: "#333" };
+  const btnStyle: React.CSSProperties = { background: "rgba(255,255,255,0.92)", border: "1px solid rgba(0,0,0,0.1)", color: "#444", borderRadius: 8 };
 
   return (
     <div className="space-y-3">
@@ -454,7 +627,7 @@ export default function DesignTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-text-primary tracking-tight">Diagramas</h2>
-          <p className="text-sm text-text-muted mt-0.5">Genera diagramas de flujo con IA — arrastra y conecta nodos</p>
+          <p className="text-sm text-text-muted mt-0.5">Mapa de pantallas con IA — click derecho en nodos para opciones</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowList(!showList)}
@@ -514,27 +687,32 @@ export default function DesignTab() {
         )}
 
         {/* React Flow canvas */}
-        <div ref={containerRef} className="flex-1 rounded-lg overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div ref={containerRef} className="flex-1 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(0,0,0,0.08)" }}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onNodeContextMenu={onNodeContextMenu}
+            onNodeClick={onNodeClick}
+            onPaneClick={onPaneClick}
             nodeTypes={nodeTypes}
             fitView
             nodesDraggable
             nodesConnectable
+            edgesReconnectable
+            deleteKeyCode="Delete"
             defaultEdgeOptions={{
               type: "smoothstep",
               animated: true,
-              style: { stroke: "rgba(0,0,0,0.2)", strokeWidth: 2 },
+              style: edgeStyle,
             }}
             style={{ background: "#F5F3EF" }}
           >
-            <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(0,0,0,0.08)" />
+            <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(0,0,0,0.06)" />
             <Controls
-              style={{ background: "#FFFFFF", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 10 }}
+              style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10 }}
               showInteractive={false}
             />
             <MiniMap
@@ -542,27 +720,34 @@ export default function DesignTab() {
                 const c = String(n.data?.color ?? "blue");
                 return NODE_COLORS[c]?.accent ?? "#3B82F6";
               }}
-              style={{ background: "#FAF9F6", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 10 }}
-              maskColor="rgba(0,0,0,0.15)"
+              style={{ background: "#FAFAF8", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10 }}
+              maskColor="rgba(0,0,0,0.12)"
             />
 
-            {/* Toolbar in canvas */}
-            <Panel position="top-right" className="flex items-center gap-2">
+            {/* Toolbar */}
+            <Panel position="top-right" className="flex items-center gap-1.5">
               <button onClick={handleAddNode}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
                 style={{ ...btnStyle, color: "#166534" }}>
                 <IconPlus className="w-3.5 h-3.5" /> Nodo
               </button>
               <button onClick={handleSave} disabled={saving || nodes.length === 0}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
                 style={btnStyle}>
                 {saving ? <IconLoader className="w-3.5 h-3.5" /> : <IconSave className="w-3.5 h-3.5" />} Guardar
               </button>
               <button onClick={handleExportPDF} disabled={exporting || nodes.length === 0}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
                 style={btnStyle}>
                 {exporting ? <IconLoader className="w-3.5 h-3.5" /> : <IconPDF className="w-3.5 h-3.5" />} PDF
               </button>
+            </Panel>
+
+            {/* Keyboard hint */}
+            <Panel position="bottom-left">
+              <div className="text-[10px] px-2 py-1 rounded-md" style={{ background: "rgba(255,255,255,0.8)", color: "#999" }}>
+                Click derecho = opciones &nbsp;|&nbsp; Doble click = editar &nbsp;|&nbsp; Delete = eliminar seleccion
+              </div>
             </Panel>
 
             {/* Empty state */}
@@ -573,10 +758,13 @@ export default function DesignTab() {
                     <IconSpark className="w-7 h-7 text-brand-mint" />
                   </div>
                   <p className="text-sm font-medium" style={{ color: "#555" }}>Describe tu app para generar el mapa de pantallas</p>
-                  <p className="text-xs mt-1.5" style={{ color: "#999" }}>Podes arrastrar nodos, conectarlos entre si, y editar con doble click</p>
+                  <p className="text-xs mt-1.5" style={{ color: "#999" }}>Cada nodo es una pantalla, cada conexion es navegacion</p>
                   <div className="flex items-center justify-center gap-4 mt-4">
-                    {Object.entries(NODE_COLORS).slice(0, 5).map(([key, c]) => (
-                      <div key={key} className="w-3 h-3 rounded-full" style={{ background: c.accent }} title={key} />
+                    {Object.entries(NODE_COLORS).slice(0, 7).map(([key, c]) => (
+                      <div key={key} className="flex flex-col items-center gap-1">
+                        <div className="w-3 h-3 rounded-full" style={{ background: c.accent }} />
+                        <span className="text-[9px]" style={{ color: "#aaa" }}>{COLOR_NAMES[key]}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -585,6 +773,29 @@ export default function DesignTab() {
           </ReactFlow>
         </div>
       </div>
+
+      {/* Context menu */}
+      {contextMenu && (
+        <NodeContextMenu
+          data={contextMenu}
+          onClose={() => setContextMenu(null)}
+          onEdit={handleContextEdit}
+          onChangeColor={handleContextChangeColor}
+          onDuplicate={handleContextDuplicate}
+          onAddChild={handleContextAddChild}
+          onDelete={handleContextDelete}
+        />
+      )}
     </div>
+  );
+}
+
+// ─── Wrapper with Provider ───────────────────────────────────────────────────
+
+export default function DesignTab() {
+  return (
+    <ReactFlowProvider>
+      <DesignTabInner />
+    </ReactFlowProvider>
   );
 }
