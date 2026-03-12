@@ -9,6 +9,7 @@ import DuckIcon from "./components/coldduck/DuckIcon";
 import BudgetTab from "./components/BudgetTab";
 import InvoiceTab from "./components/InvoiceTab";
 import CalendarTab from "./components/CalendarTab";
+import PlanningTab from "./components/PlanningTab";
 import DashboardSummary from "./components/DashboardSummary";
 import { FadeIn } from "./components/AnimatedList";
 import { useToast } from "./components/Toast";
@@ -88,6 +89,20 @@ function IconInvoice({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+function IconPlanning({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M9 9h6" />
+      <path d="M9 12h6" />
+      <path d="M9 15h4" />
+      <circle cx="6" cy="9" r="0.75" fill="currentColor" />
+      <circle cx="6" cy="12" r="0.75" fill="currentColor" />
+      <circle cx="6" cy="15" r="0.75" fill="currentColor" />
+    </svg>
+  );
+}
+
 function IconCollapse({ collapsed, className = "w-5 h-5" }: { collapsed: boolean; className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -117,6 +132,7 @@ const NAV_ITEMS = [
   { key: "budgets", label: "Presupuestos", icon: "document" },
   { key: "invoice", label: "Invoice", icon: "invoice" },
   { key: "calendar", label: "Calendario", icon: "calendar" },
+  { key: "planning", label: "Planificaciones", icon: "planning" },
 ] as const;
 
 type TabKey = (typeof NAV_ITEMS)[number]["key"];
@@ -215,6 +231,7 @@ export default function Home() {
               {item.icon === "document" && <IconDocument />}
               {item.icon === "invoice" && <IconInvoice />}
               {item.icon === "calendar" && <IconCalendar />}
+              {item.icon === "planning" && <IconPlanning />}
               {!sidebarCollapsed && (
                 <span className="text-[13px]">{item.label}</span>
               )}
@@ -382,6 +399,12 @@ export default function Home() {
           {activeTab === "calendar" && (
             <FadeIn>
               <CalendarTab />
+            </FadeIn>
+          )}
+
+          {activeTab === "planning" && (
+            <FadeIn>
+              <PlanningTab />
             </FadeIn>
           )}
         </div>

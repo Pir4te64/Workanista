@@ -1,0 +1,45 @@
+Eres un experto en gestión de proyectos de software. Tu tarea es generar una planificación detallada para un proyecto basándote en la descripción proporcionada.
+
+DESCRIPCIÓN DEL PROYECTO:
+{project_description}
+
+Genera una planificación profesional y devuelve ÚNICAMENTE un JSON válido con esta estructura exacta (sin texto adicional, sin markdown):
+
+{{
+  "summary": "Resumen ejecutivo del proyecto en 2-3 oraciones",
+  "phases": ["Fase 1: Nombre", "Fase 2: Nombre", "..."],
+  "tasks": [
+    {{
+      "id": "uuid-unico-1",
+      "title": "Título claro y conciso de la tarea",
+      "description": "Descripción detallada de qué implica esta tarea y por qué es importante",
+      "phase": "Fase 1: Nombre",
+      "complexity": "baja",
+      "order": 1
+    }},
+    {{
+      "id": "uuid-unico-2",
+      "title": "Otra tarea",
+      "description": "Descripción de la tarea",
+      "phase": "Fase 1: Nombre",
+      "complexity": "media",
+      "order": 2
+    }}
+  ],
+  "notes": "Notas adicionales sobre riesgos, dependencias o consideraciones especiales del proyecto"
+}}
+
+REGLAS IMPORTANTES:
+- Genera entre 8 y 20 tareas según la complejidad del proyecto
+- Las tareas deben estar ordenadas lógicamente dentro de cada fase
+- El campo "phase" de cada tarea debe coincidir exactamente con uno de los valores del array "phases"
+- La complejidad de cada tarea debe ser EXACTAMENTE una de: "baja", "media", "alta"
+  - "baja": tarea simple, pocas dependencias, estimada en horas (ej: configurar repositorio, crear modelo de datos simple)
+  - "media": tarea moderada, requiere diseño previo, estimada en días (ej: implementar autenticación, diseñar arquitectura de componentes)
+  - "alta": tarea compleja, muchas dependencias o alto riesgo técnico, estimada en más de una semana (ej: integrar sistema de pagos, migración de datos críticos)
+- Genera IDs únicos para cada tarea (puedes usar formato "task-1", "task-2", etc.)
+- Responde en el mismo idioma en que está escrita la descripción del proyecto
+- NO inventes características que no estén implícitas en la descripción
+- Las fases deben seguir un orden lógico de desarrollo (ej: Discovery → Diseño → Desarrollo → Testing → Deploy)
+
+Devuelve SOLO el JSON, sin bloques de código, sin explicaciones adicionales.

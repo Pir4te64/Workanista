@@ -8,6 +8,7 @@ from services.embedding_service import EmbeddingService
 from services.memory_service import MemoryService
 from services.coldduck.coldduck_service import ColdDuckService
 from services.google_calendar_service import GoogleCalendarService
+from services.planning_service import PlanningService
 from database.supabase_client import SupabaseClient
 from database.vector_store import VectorStore
 from utils.logger import logger
@@ -33,6 +34,7 @@ analyzer = ProposalAnalyzer()
 generator = ProposalGenerator()
 coldduck = ColdDuckService(db)
 google_cal = GoogleCalendarService(db)
+planning_svc = PlanningService(db)
 
 
 class ProposalRequest(BaseModel):
@@ -824,6 +826,94 @@ async def google_availability(email: str, time_min: str, time_max: str):
         return {"busy": availability}
     except Exception as e:
         logger.error(f"Google availability error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Planning ─────────────────────────────────────────────────────────────────
+
+class PlanningGenerateRequest(BaseModel):
+    project_description: str
+
+
+class PlanningSaveRequest(BaseModel):
+    project_name: str
+    description: str
+    data: dict
+    planning_id: Optional[str] = None
+
+
+class PlanningUpdateTasksRequest(BaseModel):
+    tasks: list
+
+
+@app.post("/plannings/generate")
+async def planning_generate(request: PlanningGenerateRequest):
+    try:
+        data = await planning_svc.generate(request.project_description)
+        return {"data": data}
+    except Exception as e:
+        logger.error(f"Planning generate error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/plannings")
+async def planning_save(request: PlanningSaveRequest):
+    try:
+        record = planning_svc.save(
+            project_name=request.project_name,
+            description=request.description,
+            data=request.data,
+            planning_id=request.planning_id,
+        )
+        return {"planning": record}
+    except Exception as e:
+        logger.error(f"Planning save error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/plannings")
+async def planning_list():
+    try:
+        plannings = planning_svc.list_all()
+        return {"plannings": plannings}
+    except Exception as e:
+        logger.error(f"Planning list error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/plannings/{planning_id}")
+async def planning_get(planning_id: str):
+    try:
+        record = planning_svc.get(planning_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="Planning not found")
+        return {"planning": record}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Planning get error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/plannings/{planning_id}/tasks")
+async def planning_update_tasks(planning_id: str, request: PlanningUpdateTasksRequest):
+    try:
+        record = planning_svc.update_tasks(planning_id, request.tasks)
+        return {"planning": record}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Planning update tasks error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/plannings/{planning_id}")
+async def planning_delete(planning_id: str):
+    try:
+        planning_svc.delete(planning_id)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Planning delete error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

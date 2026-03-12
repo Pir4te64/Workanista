@@ -197,3 +197,102 @@ export async function getBudgetAnalytics(): Promise<BudgetAnalytics> {
   if (!res.ok) throw new Error("Error al obtener analytics de presupuestos");
   return res.json();
 }
+
+// ── Plannings ──
+
+export type TaskStatus = "sin_comenzar" | "en_proceso" | "terminado";
+export type TaskComplexity = "baja" | "media" | "alta";
+
+export interface PlanningTask {
+  id: string;
+  title: string;
+  description: string;
+  phase: string;
+  complexity: TaskComplexity;
+  status: TaskStatus;
+  order: number;
+}
+
+export interface PlanningData {
+  summary: string;
+  phases: string[];
+  tasks: PlanningTask[];
+  notes?: string;
+}
+
+export interface PlanningSummary {
+  id: string;
+  project_name: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlanningFull extends PlanningSummary {
+  data: PlanningData;
+}
+
+export async function generatePlanning(projectDescription: string): Promise<PlanningData> {
+  const res = await fetch(`${API_BASE}/plannings/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ project_description: projectDescription }),
+  });
+  if (!res.ok) throw new Error("Error al generar la planificacion");
+  const json = await res.json();
+  return json.data;
+}
+
+export async function savePlanning(
+  projectName: string,
+  description: string,
+  data: PlanningData,
+  planningId?: string
+): Promise<PlanningFull> {
+  const res = await fetch(`${API_BASE}/plannings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      project_name: projectName,
+      description,
+      data,
+      planning_id: planningId || null,
+    }),
+  });
+  if (!res.ok) throw new Error("Error al guardar la planificacion");
+  const json = await res.json();
+  return json.planning;
+}
+
+export async function listPlannings(): Promise<PlanningSummary[]> {
+  const res = await fetch(`${API_BASE}/plannings`);
+  if (!res.ok) throw new Error("Error al obtener planificaciones");
+  const json = await res.json();
+  return json.plannings;
+}
+
+export async function getPlanning(planningId: string): Promise<PlanningFull> {
+  const res = await fetch(`${API_BASE}/plannings/${planningId}`);
+  if (!res.ok) throw new Error("Error al obtener planificacion");
+  const json = await res.json();
+  return json.planning;
+}
+
+export async function updatePlanningTasks(
+  planningId: string,
+  tasks: PlanningTask[]
+): Promise<PlanningFull> {
+  const res = await fetch(`${API_BASE}/plannings/${planningId}/tasks`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tasks }),
+  });
+  if (!res.ok) throw new Error("Error al actualizar tareas");
+  const json = await res.json();
+  return json.planning;
+}
+
+export async function deletePlanning(planningId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/plannings/${planningId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Error al eliminar planificacion");
+}
