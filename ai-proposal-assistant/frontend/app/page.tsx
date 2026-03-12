@@ -9,7 +9,6 @@ import DuckIcon from "./components/coldduck/DuckIcon";
 import BudgetTab from "./components/BudgetTab";
 import InvoiceTab from "./components/InvoiceTab";
 import CalendarTab from "./components/CalendarTab";
-import PlanningTab from "./components/PlanningTab";
 import ScrumTab from "./components/ScrumTab";
 import DashboardSummary from "./components/DashboardSummary";
 import { FadeIn } from "./components/AnimatedList";
@@ -100,19 +99,6 @@ function IconScrum({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-function IconPlanning({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M9 9h6" />
-      <path d="M9 12h6" />
-      <path d="M9 15h4" />
-      <circle cx="6" cy="9" r="0.75" fill="currentColor" />
-      <circle cx="6" cy="12" r="0.75" fill="currentColor" />
-      <circle cx="6" cy="15" r="0.75" fill="currentColor" />
-    </svg>
-  );
-}
 
 function IconCollapse({ collapsed, className = "w-5 h-5" }: { collapsed: boolean; className?: string }) {
   return (
@@ -143,8 +129,7 @@ const NAV_ITEMS = [
   { key: "budgets", label: "Presupuestos", icon: "document" },
   { key: "invoice", label: "Invoice", icon: "invoice" },
   { key: "calendar", label: "Calendario", icon: "calendar" },
-  { key: "planning", label: "Planificaciones", icon: "planning" },
-  { key: "scrum", label: "Sprints Scrum", icon: "scrum" },
+  { key: "scrum", label: "Planificacion", icon: "scrum" },
 ] as const;
 
 type TabKey = (typeof NAV_ITEMS)[number]["key"];
@@ -216,13 +201,13 @@ export default function Home() {
       {/* Sidebar */}
       <aside
         className={`${
-          sidebarCollapsed ? "w-[72px]" : "w-60"
-        } flex flex-col bg-surface-dark/60 backdrop-blur-2xl transition-all duration-300 shrink-0 relative`}
-        style={{ borderRight: "1px solid rgba(255,255,255,0.04)" }}
+          sidebarCollapsed ? "w-[60px]" : "w-52"
+        } flex flex-col bg-surface-dark/70 backdrop-blur-2xl transition-all duration-300 shrink-0 relative`}
+        style={{ borderRight: "1px solid rgba(255,255,255,0.06)" }}
       >
         {/* Logo */}
-        <div className={`flex items-center justify-center ${sidebarCollapsed ? "py-5" : "pt-8 pb-6"}`}>
-          <DuckIcon size={sidebarCollapsed ? 40 : 140} />
+        <div className={`flex items-center justify-center ${sidebarCollapsed ? "py-3" : "pt-5 pb-3"}`}>
+          <DuckIcon size={sidebarCollapsed ? 32 : 80} />
         </div>
 
         {/* Nav */}
@@ -243,15 +228,14 @@ export default function Home() {
               {item.icon === "document" && <IconDocument />}
               {item.icon === "invoice" && <IconInvoice />}
               {item.icon === "calendar" && <IconCalendar />}
-              {item.icon === "planning" && <IconPlanning />}
               {item.icon === "scrum" && <IconScrum />}
               {!sidebarCollapsed && (
-                <span className="text-[13px]">{item.label}</span>
+                <span className="text-sm">{item.label}</span>
               )}
               {!sidebarCollapsed &&
                 item.key === "workana" &&
                 queue.length > 0 && (
-                  <span className="ml-auto px-2 py-0.5 text-[10px] font-semibold bg-brand-mint/15 text-brand-mint rounded-md">
+                  <span className="ml-auto px-1.5 py-0.5 text-[11px] font-semibold bg-brand-mint/15 text-brand-mint rounded-md">
                     {pendingCount > 0 ? pendingCount : doneCount}
                   </span>
                 )}
@@ -260,20 +244,20 @@ export default function Home() {
         </nav>
 
         {/* Sidebar footer */}
-        <div className="p-3 space-y-1" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <div className="p-2.5 space-y-0.5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="sidebar-item-inactive w-full justify-center"
           >
             <IconCollapse collapsed={sidebarCollapsed} />
-            {!sidebarCollapsed && <span className="text-[13px]">Colapsar</span>}
+            {!sidebarCollapsed && <span className="text-sm">Colapsar</span>}
           </button>
           <button
             onClick={handleLogout}
             className="sidebar-item-inactive w-full text-red-400/70 hover:text-red-400"
           >
             <IconLogout />
-            {!sidebarCollapsed && <span className="text-[13px]">Cerrar sesion</span>}
+            {!sidebarCollapsed && <span className="text-sm">Cerrar sesion</span>}
           </button>
         </div>
       </aside>
@@ -283,29 +267,29 @@ export default function Home() {
         {/* Top gradient accent */}
         <div className="gradient-accent h-[3px]" />
 
-        <div className="max-w-5xl mx-auto px-8 py-10">
+        <div className="max-w-7xl mx-auto px-6 py-5">
           {/* Keyboard shortcuts hint */}
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end mb-3">
             <div className="flex items-center gap-3">
-              <kbd className="px-1.5 py-0.5 text-[10px] text-text-muted rounded" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <kbd className="px-1.5 py-0.5 text-xs text-text-muted rounded" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 ⌘N
               </kbd>
-              <span className="text-[10px] text-text-muted">Nueva propuesta</span>
-              <kbd className="px-1.5 py-0.5 text-[10px] text-text-muted rounded" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <span className="text-xs text-text-muted">Nueva propuesta</span>
+              <kbd className="px-1.5 py-0.5 text-xs text-text-muted rounded" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 ⌘K
               </kbd>
-              <span className="text-[10px] text-text-muted">Dashboard</span>
+              <span className="text-xs text-text-muted">Dashboard</span>
             </div>
           </div>
 
           {activeTab === "dashboard" && (
             <FadeIn>
-              <div className="space-y-8">
+              <div className="space-y-5">
                 <div>
-                  <h2 className="text-2xl font-semibold text-text-primary tracking-tight">
+                  <h2 className="text-xl font-semibold text-text-primary tracking-tight">
                     Dashboard
                   </h2>
-                  <p className="text-sm text-text-muted mt-1">
+                  <p className="text-sm text-text-muted mt-0.5">
                     Resumen de tu actividad
                   </p>
                 </div>
@@ -313,13 +297,13 @@ export default function Home() {
 
                 {/* Quick actions */}
                 <div>
-                  <p className="section-title mb-4">Acciones rapidas</p>
-                  <div className="grid grid-cols-4 gap-5">
+                  <p className="section-title mb-3">Acciones rapidas</p>
+                  <div className="grid grid-cols-4 gap-4">
                     <button
                       onClick={() => setActiveTab("workana")}
-                      className="glass-card-hover p-7 text-left group"
+                      className="glass-card-hover p-5 text-left group"
                     >
-                      <div className="mb-4 text-text-muted group-hover:text-brand-mint transition-colors duration-300">
+                      <div className="mb-3 text-text-muted group-hover:text-brand-mint transition-colors duration-300">
                         <IconBriefcase className="w-8 h-8" />
                       </div>
                       <h3 className="text-sm font-semibold text-text-primary group-hover:text-brand-mint transition-colors duration-300">
@@ -331,9 +315,9 @@ export default function Home() {
                     </button>
                     <button
                       onClick={() => setActiveTab("linkedin")}
-                      className="glass-card-hover p-7 text-left group"
+                      className="glass-card-hover p-5 text-left group"
                     >
-                      <div className="mb-4 text-text-muted group-hover:text-brand-mint transition-colors duration-300">
+                      <div className="mb-3 text-text-muted group-hover:text-brand-mint transition-colors duration-300">
                         <IconSend className="w-8 h-8" />
                       </div>
                       <h3 className="text-sm font-semibold text-text-primary group-hover:text-brand-mint transition-colors duration-300">
@@ -345,9 +329,9 @@ export default function Home() {
                     </button>
                     <button
                       onClick={() => setActiveTab("budgets")}
-                      className="glass-card-hover p-7 text-left group"
+                      className="glass-card-hover p-5 text-left group"
                     >
-                      <div className="mb-4 text-text-muted group-hover:text-brand-mint transition-colors duration-300">
+                      <div className="mb-3 text-text-muted group-hover:text-brand-mint transition-colors duration-300">
                         <IconDocument className="w-8 h-8" />
                       </div>
                       <h3 className="text-sm font-semibold text-text-primary group-hover:text-brand-mint transition-colors duration-300">
@@ -359,9 +343,9 @@ export default function Home() {
                     </button>
                     <button
                       onClick={() => setActiveTab("invoice")}
-                      className="glass-card-hover p-7 text-left group"
+                      className="glass-card-hover p-5 text-left group"
                     >
-                      <div className="mb-4 text-text-muted group-hover:text-brand-mint transition-colors duration-300">
+                      <div className="mb-3 text-text-muted group-hover:text-brand-mint transition-colors duration-300">
                         <IconInvoice className="w-8 h-8" />
                       </div>
                       <h3 className="text-sm font-semibold text-text-primary group-hover:text-brand-mint transition-colors duration-300">
@@ -377,55 +361,37 @@ export default function Home() {
             </FadeIn>
           )}
 
-          {activeTab === "workana" && (
-            <FadeIn>
-              <WorkanaTab
-                queue={queue}
-                onAdd={addToQueue}
-                onRemove={removeFromQueue}
-                onClearCompleted={clearCompleted}
-                onUpdateItem={updateItem}
-                onReorder={reorderQueue}
-                inputRef={inputRef}
-              />
-            </FadeIn>
-          )}
+          <div className={activeTab === "workana" ? "" : "hidden"}>
+            <WorkanaTab
+              queue={queue}
+              onAdd={addToQueue}
+              onRemove={removeFromQueue}
+              onClearCompleted={clearCompleted}
+              onUpdateItem={updateItem}
+              onReorder={reorderQueue}
+              inputRef={inputRef}
+            />
+          </div>
 
-          {activeTab === "linkedin" && (
-            <FadeIn>
-              <ColdDuckTab />
-            </FadeIn>
-          )}
+          <div className={activeTab === "linkedin" ? "" : "hidden"}>
+            <ColdDuckTab />
+          </div>
 
-          {activeTab === "budgets" && (
-            <FadeIn>
-              <BudgetTab />
-            </FadeIn>
-          )}
+          <div className={activeTab === "budgets" ? "" : "hidden"}>
+            <BudgetTab />
+          </div>
 
-          {activeTab === "invoice" && (
-            <FadeIn>
-              <InvoiceTab />
-            </FadeIn>
-          )}
+          <div className={activeTab === "invoice" ? "" : "hidden"}>
+            <InvoiceTab />
+          </div>
 
-          {activeTab === "calendar" && (
-            <FadeIn>
-              <CalendarTab />
-            </FadeIn>
-          )}
+          <div className={activeTab === "calendar" ? "" : "hidden"}>
+            <CalendarTab />
+          </div>
 
-          {activeTab === "planning" && (
-            <FadeIn>
-              <PlanningTab />
-            </FadeIn>
-          )}
-
-          {activeTab === "scrum" && (
-            <FadeIn>
-              <ScrumTab />
-            </FadeIn>
-          )}
+          <div className={activeTab === "scrum" ? "" : "hidden"}>
+            <ScrumTab />
+          </div>
         </div>
       </main>
     </div>

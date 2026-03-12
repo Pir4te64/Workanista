@@ -81,14 +81,14 @@ export default function DashboardSummary() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="glass-card p-6 animate-pulse"
+            className="glass-card p-4 animate-pulse"
           >
-            <div className="h-3 w-20 rounded-md mb-4" style={{ background: "rgba(255,255,255,0.06)" }} />
-            <div className="h-8 w-16 rounded-md" style={{ background: "rgba(255,255,255,0.06)" }} />
+            <div className="h-3 w-20 rounded-md mb-3" style={{ background: "rgba(255,255,255,0.08)" }} />
+            <div className="h-7 w-16 rounded-md" style={{ background: "rgba(255,255,255,0.08)" }} />
           </div>
         ))}
       </div>
@@ -96,27 +96,27 @@ export default function DashboardSummary() {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {stats.map((stat, i) => (
         <motion.div
           key={stat.label}
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: i * 0.08, ease: [0.21, 0.47, 0.32, 0.98] }}
-          className="glass-card p-6 transition-all duration-300 hover:shadow-card-hover group"
-          style={{ borderColor: "rgba(255,255,255,0.06)" }}
+          transition={{ duration: 0.4, delay: i * 0.06, ease: [0.21, 0.47, 0.32, 0.98] }}
+          className="glass-card p-4 transition-all duration-300 hover:shadow-card-hover group"
+          style={{ borderColor: "rgba(255,255,255,0.08)" }}
         >
-          <p className="section-title mb-3">
+          <p className="section-title mb-2">
             {stat.label}
           </p>
           <p
-            className="text-3xl font-semibold tracking-tight"
-            style={stat.color ? { color: stat.color } : { color: "#E8E8F0" }}
+            className="text-2xl font-semibold tracking-tight"
+            style={stat.color ? { color: stat.color } : { color: "#EDEDF4" }}
           >
             {stat.value}
           </p>
           {stat.sub && (
-            <p className="text-xs text-text-muted mt-2">{stat.sub}</p>
+            <p className="text-xs text-text-muted mt-1.5">{stat.sub}</p>
           )}
         </motion.div>
       ))}
