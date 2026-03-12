@@ -10,6 +10,7 @@ import BudgetTab from "./components/BudgetTab";
 import InvoiceTab from "./components/InvoiceTab";
 import CalendarTab from "./components/CalendarTab";
 import PlanningTab from "./components/PlanningTab";
+import ScrumTab from "./components/ScrumTab";
 import DashboardSummary from "./components/DashboardSummary";
 import { FadeIn } from "./components/AnimatedList";
 import { useToast } from "./components/Toast";
@@ -89,6 +90,16 @@ function IconInvoice({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+function IconScrum({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+      <path d="M2 17l10 5 10-5" />
+      <path d="M2 12l10 5 10-5" />
+    </svg>
+  );
+}
+
 function IconPlanning({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -133,6 +144,7 @@ const NAV_ITEMS = [
   { key: "invoice", label: "Invoice", icon: "invoice" },
   { key: "calendar", label: "Calendario", icon: "calendar" },
   { key: "planning", label: "Planificaciones", icon: "planning" },
+  { key: "scrum", label: "Sprints Scrum", icon: "scrum" },
 ] as const;
 
 type TabKey = (typeof NAV_ITEMS)[number]["key"];
@@ -232,6 +244,7 @@ export default function Home() {
               {item.icon === "invoice" && <IconInvoice />}
               {item.icon === "calendar" && <IconCalendar />}
               {item.icon === "planning" && <IconPlanning />}
+              {item.icon === "scrum" && <IconScrum />}
               {!sidebarCollapsed && (
                 <span className="text-[13px]">{item.label}</span>
               )}
@@ -405,6 +418,12 @@ export default function Home() {
           {activeTab === "planning" && (
             <FadeIn>
               <PlanningTab />
+            </FadeIn>
+          )}
+
+          {activeTab === "scrum" && (
+            <FadeIn>
+              <ScrumTab />
             </FadeIn>
           )}
         </div>

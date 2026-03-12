@@ -9,6 +9,7 @@ from services.memory_service import MemoryService
 from services.coldduck.coldduck_service import ColdDuckService
 from services.google_calendar_service import GoogleCalendarService
 from services.planning_service import PlanningService
+from services.scrum_service import ScrumService
 from database.supabase_client import SupabaseClient
 from database.vector_store import VectorStore
 from utils.logger import logger
@@ -35,6 +36,7 @@ generator = ProposalGenerator()
 coldduck = ColdDuckService(db)
 google_cal = GoogleCalendarService(db)
 planning_svc = PlanningService(db)
+scrum_svc = ScrumService(db)
 
 
 class ProposalRequest(BaseModel):
@@ -914,6 +916,94 @@ async def planning_delete(planning_id: str):
         return {"status": "ok"}
     except Exception as e:
         logger.error(f"Planning delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Scrum ─────────────────────────────────────────────────────────────────────
+
+class ScrumGenerateRequest(BaseModel):
+    project_description: str
+
+
+class ScrumSaveRequest(BaseModel):
+    project_name: str
+    client_name: str = ""
+    description: str
+    data: dict
+    project_id: Optional[str] = None
+
+
+class ScrumUpdateDataRequest(BaseModel):
+    data: dict
+
+
+@app.post("/scrum/generate")
+async def scrum_generate(request: ScrumGenerateRequest):
+    try:
+        data = await scrum_svc.generate(request.project_description)
+        return {"data": data}
+    except Exception as e:
+        logger.error(f"Scrum generate error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/scrum")
+async def scrum_save(request: ScrumSaveRequest):
+    try:
+        record = scrum_svc.save(
+            project_name=request.project_name,
+            client_name=request.client_name,
+            description=request.description,
+            data=request.data,
+            project_id=request.project_id,
+        )
+        return {"project": record}
+    except Exception as e:
+        logger.error(f"Scrum save error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/scrum")
+async def scrum_list():
+    try:
+        projects = scrum_svc.list_all()
+        return {"projects": projects}
+    except Exception as e:
+        logger.error(f"Scrum list error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/scrum/{project_id}")
+async def scrum_get(project_id: str):
+    try:
+        record = scrum_svc.get(project_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="Scrum project not found")
+        return {"project": record}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Scrum get error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/scrum/{project_id}")
+async def scrum_update(project_id: str, request: ScrumUpdateDataRequest):
+    try:
+        record = scrum_svc.update_data(project_id, request.data)
+        return {"project": record}
+    except Exception as e:
+        logger.error(f"Scrum update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/scrum/{project_id}")
+async def scrum_delete(project_id: str):
+    try:
+        scrum_svc.delete(project_id)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Scrum delete error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -1,0 +1,71 @@
+Eres un Scrum Master y Product Owner experto. Tu tarea es generar un plan de sprints completo y profesional para un proyecto de software basándote en la descripción proporcionada.
+
+DESCRIPCIÓN DEL PROYECTO:
+{project_description}
+
+Genera un plan de sprints y devuelve ÚNICAMENTE un JSON válido con esta estructura exacta (sin texto adicional, sin markdown):
+
+{{
+  "summary": "Resumen ejecutivo del proyecto y estrategia de desarrollo en 2-3 oraciones",
+  "recommended_velocity": 30,
+  "total_estimated_points": 120,
+  "sprints": [
+    {{
+      "number": 1,
+      "name": "Nombre descriptivo del sprint",
+      "goal": "Objetivo claro y medible del sprint: qué quedará funcionando al finalizar",
+      "duration_weeks": 2,
+      "start_date": "",
+      "end_date": "",
+      "stories": [
+        {{
+          "id": "story-1-1",
+          "title": "Como [rol de usuario] quiero [funcionalidad] para [beneficio]",
+          "description": "Descripción técnica detallada de qué hay que implementar",
+          "acceptance_criteria": [
+            "Criterio de aceptación 1 verificable",
+            "Criterio de aceptación 2 verificable",
+            "Criterio de aceptación 3 verificable"
+          ],
+          "story_points": 5,
+          "priority": "alta",
+          "status": "pendiente"
+        }}
+      ],
+      "deliverables": [
+        {{
+          "id": "del-1-1",
+          "title": "Nombre del entregable concreto",
+          "description": "Qué se entrega exactamente al finalizar el sprint"
+        }}
+      ]
+    }}
+  ],
+  "notes": "Riesgos, dependencias, consideraciones técnicas o recomendaciones importantes"
+}}
+
+REGLAS DE SCRUM A RESPETAR:
+1. Cada sprint debe durar entre 1 y 3 semanas (2 semanas es el estándar recomendado)
+2. Los story points DEBEN usar escala Fibonacci: 1, 2, 3, 5, 8, 13, 21
+   - 1-2 puntos: tarea trivial o de configuración (menos de 1 día)
+   - 3-5 puntos: tarea clara con poca incertidumbre (1-3 días)
+   - 8 puntos: tarea compleja con algo de incertidumbre (3-5 días)
+   - 13-21 puntos: historia muy compleja, considerar dividirla en sub-historias
+3. El "recommended_velocity" es la cantidad de story points esperados por sprint (típicamente 20-40)
+4. Cada sprint debe tener entre 3 y 8 user stories
+5. Las historias deben seguir el formato "Como [rol] quiero [qué] para [para qué]"
+6. Los criterios de aceptación deben ser verificables y concretos (2-4 criterios por historia)
+7. Los entregables son los incrementos de producto funcionales al final del sprint (1-4 por sprint)
+8. La prioridad de cada historia debe ser: "alta", "media" o "baja"
+9. El status inicial de todas las historias debe ser: "pendiente"
+10. Genera sprints suficientes para cubrir todo el alcance del proyecto
+11. El primer sprint siempre debe incluir setup, arquitectura base y configuración de entornos
+12. El último sprint debe incluir testing integral, documentación y preparación para producción
+
+ESTRUCTURA RECOMENDADA DE SPRINTS:
+- Sprint 1: Setup técnico, arquitectura base, CI/CD
+- Sprints intermedios: Features del producto por módulo/funcionalidad
+- Sprint final: Testing E2E, documentación, deploy, handover
+
+Responde en el mismo idioma en que está escrita la descripción del proyecto.
+Devuelve SOLO el JSON, sin bloques de código, sin explicaciones adicionales.
