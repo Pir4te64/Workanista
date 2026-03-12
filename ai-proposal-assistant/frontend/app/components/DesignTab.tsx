@@ -345,11 +345,11 @@ function DesignTabInner() {
   const { addToast } = useToast();
   const reactFlowInstance = useReactFlow();
 
-  const edgeStyle = { stroke: "rgba(0,0,0,0.2)", strokeWidth: 2 };
+  const edgeStyle = { stroke: "rgba(0,0,0,0.25)", strokeWidth: 1.5 };
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge({
-      ...params, type: "smoothstep", animated: true, style: edgeStyle,
+      ...params, type: "smoothstep", animated: false, style: edgeStyle,
     }, eds)),
     [setEdges]
   );
@@ -408,7 +408,7 @@ function DesignTabInner() {
       sourceHandle: "right",
       targetHandle: "left",
       type: "smoothstep",
-      animated: true,
+      animated: false,
       style: edgeStyle,
     };
     setNodes((nds) => [...nds, newNode]);
@@ -438,9 +438,14 @@ function DesignTabInner() {
     const id = `n-${Date.now()}`;
     const colors = Object.keys(NODE_COLORS);
     const color = colors[nodes.length % colors.length];
+    // Place node at center of current viewport
+    const container = containerRef.current;
+    const centerX = container ? container.clientWidth / 2 : 400;
+    const centerY = container ? container.clientHeight / 2 : 300;
+    const position = reactFlowInstance.screenToFlowPosition({ x: centerX + (container?.getBoundingClientRect().left ?? 0), y: centerY + (container?.getBoundingClientRect().top ?? 0) });
     const newNode: Node = {
       id, type: "custom",
-      position: { x: 100 + nodes.length * 50, y: 200 + nodes.length * 30 },
+      position,
       data: { label: "Nueva pantalla", description: "", color },
     };
     setNodes((prev) => [...prev, newNode]);
@@ -705,7 +710,7 @@ function DesignTabInner() {
             deleteKeyCode="Delete"
             defaultEdgeOptions={{
               type: "smoothstep",
-              animated: true,
+              animated: false,
               style: edgeStyle,
             }}
             style={{ background: "#F5F3EF" }}

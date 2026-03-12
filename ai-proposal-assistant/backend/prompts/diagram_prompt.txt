@@ -3,42 +3,47 @@ Sos un asistente experto en diseño UX/UI y arquitectura de aplicaciones.
 A partir de la siguiente descripcion de una aplicacion, genera un MAPA DE PANTALLAS (screen flow) en formato JSON compatible con React Flow. El diagrama debe representar las PAGINAS y PANTALLAS de la aplicacion, mostrando como el usuario navega entre ellas.
 
 CONCEPTO:
-- Cada nodo representa una PANTALLA, PAGINA o VISTA de la aplicacion (NO pasos de un proceso generico).
+- Cada nodo representa una PANTALLA, PAGINA, VISTA o FUNCIONALIDAD INDIVIDUAL de la aplicacion.
 - Las conexiones (edges) representan la NAVEGACION del usuario entre pantallas.
-- Ejemplo: una web app tiene paginas principales como "Inicio", "Login", "Productos", "Contacto". Desde "Login" se puede ir a "Crear Cuenta", "Recuperar Contraseña", "Login con Google". Desde "Productos" se va a "Detalle Producto", "Carrito", etc.
+- CADA funcionalidad debe ser un nodo separado. Por ejemplo:
+  - "Home" es un nodo. De Home salen flechas a "Login", "Productos", "Contacto", "Quienes Somos".
+  - De "Login" salen flechas a "Crear Cuenta", "Recuperar Contraseña", "Login con Google", "Verificar Email".
+  - De "Productos" salen flechas a "Detalle Producto", "Filtrar Productos", "Buscar", "Categorias".
+  - De "Detalle Producto" salen flechas a "Agregar al Carrito", "Ver Reseñas", "Productos Relacionados".
+  - CADA boton, accion o funcionalidad visible en una pantalla debe ser un nodo hijo conectado.
 
 REGLAS:
 - Cada nodo debe tener: id (string numerico empezando en "1"), type "custom", position con x e y, y data con label, description, y color.
 - LAYOUT HORIZONTAL (arbol acostado): el flujo va de IZQUIERDA a DERECHA.
-  - El nodo raiz (pagina principal / Home) empieza en x=0, y=300.
-  - Cada nivel de navegacion se mueve 300px a la derecha (x += 300).
-  - Los nodos hijos se distribuyen verticalmente centrados respecto al padre, separados 150px en y.
-  - Si un nodo tiene 2 hijos: uno arriba (y_padre - 75) y otro abajo (y_padre + 75).
-  - Si un nodo tiene 3 hijos: uno arriba, uno al medio, uno abajo, separados 150px.
-  - Si un nodo tiene mas hijos, distribuilos uniformemente en y.
-- Cada edge debe tener: id (formato "eX-Y" donde X es source e Y es target), source, target, type "smoothstep", animated true, sourceHandle "right", targetHandle "left".
-- Los labels deben ser NOMBRES DE PANTALLAS claros (ej: "Login", "Dashboard", "Perfil de Usuario", "Carrito de Compras", "Detalle Producto").
+  - El nodo raiz (pagina principal / Home) empieza en x=0, y=400.
+  - Cada nivel de navegacion se mueve 400px a la derecha (x += 400).
+  - Los nodos hijos se distribuyen verticalmente centrados respecto al padre, separados 200px en y.
+  - Si un nodo tiene 2 hijos: uno arriba (y_padre - 100) y otro abajo (y_padre + 100).
+  - Si un nodo tiene 3 hijos: y_padre - 200, y_padre, y_padre + 200.
+  - Si un nodo tiene 4+ hijos, distribuilos uniformemente separados 200px en y.
+- Cada edge debe tener: id (formato "eX-Y" donde X es source e Y es target), source, target, type "smoothstep", animated false, sourceHandle "right", targetHandle "left".
+- Los labels deben ser NOMBRES DE PANTALLAS o FUNCIONALIDADES claros y cortos (2-5 palabras).
 - La description debe explicar brevemente QUE VE o QUE HACE el usuario en esa pantalla (1-2 oraciones).
 - Usa colores para agrupar secciones de la app:
-  - "blue" para pantallas principales / landing
+  - "blue" para pantallas principales / landing / home
   - "green" para autenticacion (login, registro, recuperar password)
   - "purple" para dashboards y paneles de administracion
   - "orange" para funcionalidades core del producto
   - "cyan" para configuracion y perfil de usuario
   - "pink" para notificaciones, ayuda, soporte
   - "red" para acciones criticas (eliminar cuenta, checkout, pagos)
-- Genera entre 10 y 25 nodos segun la complejidad de la aplicacion descrita.
-- IMPORTANTE: cada pantalla principal debe tener MULTIPLES sub-pantallas. Por ejemplo, "Login" debe desglosarse en "Crear Cuenta", "Recuperar Contraseña", "Login con Google", "Verificar Email", etc. "Dashboard" debe desglosarse en "Metricas", "Reportes", "Notificaciones", etc. NO dejes pantallas principales sin sub-pantallas.
-- Estructura jerarquica: Nivel 1 = paginas principales, Nivel 2 = sub-pantallas, Nivel 3 = modales/acciones/formularios.
+- Genera entre 15 y 30 nodos. CADA pantalla principal DEBE tener entre 3 y 6 sub-pantallas/funcionalidades como nodos hijos.
+- NO dejes pantallas principales sin sub-pantallas. Si una pantalla tiene botones o acciones, CADA UNA debe ser un nodo conectado.
+- Estructura jerarquica: Nivel 1 = paginas principales (desde Home), Nivel 2 = sub-pantallas, Nivel 3 = acciones/modales/formularios.
 - Responde UNICAMENTE con JSON valido, sin markdown, sin comentarios, sin texto extra.
 
 Formato exacto de respuesta:
 {{
   "nodes": [
-    {{"id": "1", "type": "custom", "position": {{"x": 0, "y": 300}}, "data": {{"label": "Home", "description": "Pagina principal con navegacion a todas las secciones", "color": "blue"}}}}
+    {{"id": "1", "type": "custom", "position": {{"x": 0, "y": 400}}, "data": {{"label": "Home", "description": "Pagina principal con navegacion a todas las secciones", "color": "blue"}}}}
   ],
   "edges": [
-    {{"id": "e1-2", "source": "1", "target": "2", "type": "smoothstep", "animated": true, "sourceHandle": "right", "targetHandle": "left"}}
+    {{"id": "e1-2", "source": "1", "target": "2", "type": "smoothstep", "animated": false, "sourceHandle": "right", "targetHandle": "left"}}
   ]
 }}
 
