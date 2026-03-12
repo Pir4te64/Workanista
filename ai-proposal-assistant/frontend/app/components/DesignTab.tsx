@@ -12,6 +12,7 @@ import {
   Handle,
   Position,
   BackgroundVariant,
+  useReactFlow,
   type Node,
   type Edge,
   type Connection,
@@ -34,63 +35,106 @@ import { listScrum, type ScrumSummary } from "@/lib/scrum-api";
 // ─── Color palette for nodes ─────────────────────────────────────────────────
 
 const NODE_COLORS: Record<string, { bg: string; border: string; accent: string; text: string }> = {
-  blue:   { bg: "rgba(59,130,246,0.15)",  border: "rgba(59,130,246,0.4)",  accent: "#3B82F6", text: "#93C5FD" },
-  green:  { bg: "rgba(34,197,94,0.15)",   border: "rgba(34,197,94,0.4)",   accent: "#22C55E", text: "#86EFAC" },
-  purple: { bg: "rgba(168,85,247,0.15)",  border: "rgba(168,85,247,0.4)",  accent: "#A855F7", text: "#D8B4FE" },
-  orange: { bg: "rgba(249,115,22,0.15)",  border: "rgba(249,115,22,0.4)",  accent: "#F97316", text: "#FDBA74" },
-  red:    { bg: "rgba(239,68,68,0.15)",   border: "rgba(239,68,68,0.4)",   accent: "#EF4444", text: "#FCA5A5" },
-  cyan:   { bg: "rgba(6,182,212,0.15)",   border: "rgba(6,182,212,0.4)",   accent: "#06B6D4", text: "#67E8F9" },
-  pink:   { bg: "rgba(236,72,153,0.15)",  border: "rgba(236,72,153,0.4)",  accent: "#EC4899", text: "#F9A8D4" },
+  blue:   { bg: "rgba(59,130,246,0.1)",   border: "rgba(59,130,246,0.35)",  accent: "#3B82F6", text: "#1E40AF" },
+  green:  { bg: "rgba(34,197,94,0.1)",    border: "rgba(34,197,94,0.35)",   accent: "#22C55E", text: "#166534" },
+  purple: { bg: "rgba(168,85,247,0.1)",   border: "rgba(168,85,247,0.35)",  accent: "#A855F7", text: "#6B21A8" },
+  orange: { bg: "rgba(249,115,22,0.1)",   border: "rgba(249,115,22,0.35)",  accent: "#F97316", text: "#9A3412" },
+  red:    { bg: "rgba(239,68,68,0.1)",    border: "rgba(239,68,68,0.35)",   accent: "#EF4444", text: "#991B1B" },
+  cyan:   { bg: "rgba(6,182,212,0.1)",    border: "rgba(6,182,212,0.35)",   accent: "#06B6D4", text: "#155E75" },
+  pink:   { bg: "rgba(236,72,153,0.1)",   border: "rgba(236,72,153,0.35)",  accent: "#EC4899", text: "#9D174D" },
 };
 
 const DEFAULT_COLOR = NODE_COLORS.blue;
 
 // ─── Custom Node (horizontal tree — handles left/right) ──────────────────────
 
-function CustomNode({ data, selected }: NodeProps) {
+function CustomNode({ id, data, selected }: NodeProps) {
   const label = String(data.label ?? "");
   const description = data.description ? String(data.description) : "";
   const colorKey = String(data.color ?? "blue");
   const c = NODE_COLORS[colorKey] ?? DEFAULT_COLOR;
+  const [collapsed, setCollapsed] = useState(!!data._collapsed);
+  const [editing, setEditing] = useState(false);
+  const [editLabel, setEditLabel] = useState(label);
+  const [editDesc, setEditDesc] = useState(description);
+  const { setNodes } = useReactFlow();
+
+  const toggleCollapse = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = !collapsed;
+    setCollapsed(next);
+    setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, _collapsed: next } } : n));
+  };
+
+  const startEditing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditLabel(label);
+    setEditDesc(description);
+    setEditing(true);
+  };
+
+  const commitEdit = () => {
+    setEditing(false);
+    setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, label: editLabel, description: editDesc } } : n));
+  };
 
   return (
     <div
-      className="rounded-xl min-w-[170px] max-w-[240px] shadow-xl transition-shadow duration-200"
+      className="rounded-xl min-w-[140px] max-w-[260px] shadow-xl transition-all duration-200"
       style={{
         background: c.bg,
         border: `2px solid ${selected ? c.accent : c.border}`,
-        boxShadow: selected ? `0 0 20px ${c.accent}40` : `0 4px 20px rgba(0,0,0,0.3)`,
+        boxShadow: selected ? `0 0 20px ${c.accent}40` : `0 4px 20px rgba(0,0,0,0.15)`,
         backdropFilter: "blur(12px)",
       }}
     >
-      {/* Left handle (input) */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="left"
-        style={{ background: c.accent, width: 10, height: 10, border: `2px solid ${c.bg}` }}
-      />
+      <Handle type="target" position={Position.Left} id="left"
+        style={{ background: c.accent, width: 10, height: 10, border: `2px solid ${c.bg}` }} />
 
-      {/* Content */}
-      <div className="px-4 py-3">
-        <div className="flex items-center gap-2 mb-1">
+      <div className="px-3 py-2">
+        <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.accent }} />
-          <p className="text-sm font-bold leading-tight" style={{ color: c.text }}>{label}</p>
+          {editing ? (
+            <input className="text-sm font-bold bg-transparent border-b outline-none flex-1 min-w-0"
+              style={{ color: c.text, borderColor: c.accent }}
+              value={editLabel} onChange={(e) => setEditLabel(e.target.value)}
+              onBlur={commitEdit} onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); }}
+              autoFocus />
+          ) : (
+            <p className="text-sm font-bold leading-tight flex-1 cursor-text" style={{ color: c.text }}
+              onDoubleClick={startEditing}>{label}</p>
+          )}
+          <button onClick={toggleCollapse} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity p-0.5"
+            style={{ color: c.text }}>
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+              {collapsed ? <polyline points="6,9 12,15 18,9" /> : <polyline points="6,15 12,9 18,15" />}
+            </svg>
+          </button>
         </div>
-        {description && (
-          <p className="text-[11px] leading-relaxed ml-[18px]" style={{ color: "rgba(255,255,255,0.5)" }}>
-            {description}
-          </p>
+        {!collapsed && (
+          editing ? (
+            <textarea className="text-[11px] leading-relaxed ml-[18px] mt-1 bg-transparent border-b outline-none w-full resize-none"
+              style={{ color: "rgba(100,100,100,0.8)", borderColor: c.border }}
+              value={editDesc} onChange={(e) => setEditDesc(e.target.value)}
+              onBlur={commitEdit} rows={2} />
+          ) : (
+            description ? (
+              <p className="text-[11px] leading-relaxed ml-[18px] mt-1 cursor-text" style={{ color: "rgba(100,100,100,0.8)" }}
+                onDoubleClick={startEditing}>
+                {description}
+              </p>
+            ) : (
+              <p className="text-[11px] leading-relaxed ml-[18px] mt-1 cursor-text italic" style={{ color: "rgba(150,150,150,0.5)" }}
+                onDoubleClick={startEditing}>
+                Doble click para editar
+              </p>
+            )
+          )
         )}
       </div>
 
-      {/* Right handle (output) */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        style={{ background: c.accent, width: 10, height: 10, border: `2px solid ${c.bg}` }}
-      />
+      <Handle type="source" position={Position.Right} id="right"
+        style={{ background: c.accent, width: 10, height: 10, border: `2px solid ${c.bg}` }} />
     </div>
   );
 }
@@ -166,7 +210,7 @@ async function exportDiagramToPDF(
   if (!el) return;
 
   const dataUrl = await toPng(el, {
-    backgroundColor: "#111118",
+    backgroundColor: "#F5F3EF",
     pixelRatio: 2,
     filter: (node) => {
       const cls = (node as HTMLElement).classList;
@@ -279,7 +323,7 @@ export default function DesignTab() {
       ...params,
       type: "smoothstep",
       animated: true,
-      style: { stroke: "rgba(255,255,255,0.3)", strokeWidth: 2 },
+      style: { stroke: "rgba(0,0,0,0.2)", strokeWidth: 2 },
     }, eds)),
     [setEdges]
   );
@@ -331,7 +375,7 @@ export default function DesignTab() {
         targetHandle: "left",
         type: e.type || "smoothstep",
         animated: e.animated ?? true,
-        style: { stroke: "rgba(255,255,255,0.3)", strokeWidth: 2 },
+        style: { stroke: "rgba(0,0,0,0.2)", strokeWidth: 2 },
       }));
       setNodes(flowNodes);
       setEdges(flowEdges);
@@ -377,7 +421,7 @@ export default function DesignTab() {
       id: e.id, source: e.source, target: e.target,
       sourceHandle: "right", targetHandle: "left",
       type: e.type || "smoothstep", animated: e.animated ?? true,
-      style: { stroke: "rgba(255,255,255,0.3)", strokeWidth: 2 },
+      style: { stroke: "rgba(0,0,0,0.2)", strokeWidth: 2 },
     })));
     setTitle(d.title);
     setPrompt(d.description || "");
@@ -402,7 +446,7 @@ export default function DesignTab() {
 
   const handleNew = () => { setNodes([]); setEdges([]); setTitle("Sin titulo"); setPrompt(""); setSelectedId(undefined); };
 
-  const btnStyle = { background: "rgba(34,34,64,0.9)", border: "1px solid rgba(255,255,255,0.1)" };
+  const btnStyle = { background: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.12)", color: "#333" };
 
   return (
     <div className="space-y-3">
@@ -442,7 +486,7 @@ export default function DesignTab() {
         </div>
         <div className="flex gap-2">
           <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe el flujo que quieres generar... Ej: 'Proceso de onboarding: registro, verificacion, asignacion de equipo, kickoff, setup de herramientas'"
+            placeholder="Describe la app para generar el mapa de pantallas... Ej: 'App de e-commerce con login, catalogo de productos, carrito, checkout y perfil de usuario'"
             className="input-premium flex-1 resize-none" rows={2} />
           <button onClick={handleGenerate} disabled={generating || !prompt.trim()}
             className="btn-primary shrink-0 flex items-center gap-1.5 self-end">
@@ -484,13 +528,13 @@ export default function DesignTab() {
             defaultEdgeOptions={{
               type: "smoothstep",
               animated: true,
-              style: { stroke: "rgba(255,255,255,0.3)", strokeWidth: 2 },
+              style: { stroke: "rgba(0,0,0,0.2)", strokeWidth: 2 },
             }}
-            style={{ background: "#0D0D15" }}
+            style={{ background: "#F5F3EF" }}
           >
-            <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(255,255,255,0.04)" />
+            <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(0,0,0,0.08)" />
             <Controls
-              style={{ background: "#1A1A30", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10 }}
+              style={{ background: "#FFFFFF", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 10 }}
               showInteractive={false}
             />
             <MiniMap
@@ -498,24 +542,24 @@ export default function DesignTab() {
                 const c = String(n.data?.color ?? "blue");
                 return NODE_COLORS[c]?.accent ?? "#3B82F6";
               }}
-              style={{ background: "#0D0D15", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10 }}
-              maskColor="rgba(0,0,0,0.6)"
+              style={{ background: "#FAF9F6", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 10 }}
+              maskColor="rgba(0,0,0,0.15)"
             />
 
             {/* Toolbar in canvas */}
             <Panel position="top-right" className="flex items-center gap-2">
               <button onClick={handleAddNode}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-brand-mint hover:text-white disabled:opacity-40"
-                style={btnStyle}>
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
+                style={{ ...btnStyle, color: "#166534" }}>
                 <IconPlus className="w-3.5 h-3.5" /> Nodo
               </button>
               <button onClick={handleSave} disabled={saving || nodes.length === 0}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-text-muted hover:text-text-primary disabled:opacity-40"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
                 style={btnStyle}>
                 {saving ? <IconLoader className="w-3.5 h-3.5" /> : <IconSave className="w-3.5 h-3.5" />} Guardar
               </button>
               <button onClick={handleExportPDF} disabled={exporting || nodes.length === 0}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-text-muted hover:text-text-primary disabled:opacity-40"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
                 style={btnStyle}>
                 {exporting ? <IconLoader className="w-3.5 h-3.5" /> : <IconPDF className="w-3.5 h-3.5" />} PDF
               </button>
@@ -528,8 +572,8 @@ export default function DesignTab() {
                   <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: "rgba(74,234,170,0.1)", border: "1px solid rgba(74,234,170,0.2)" }}>
                     <IconSpark className="w-7 h-7 text-brand-mint" />
                   </div>
-                  <p className="text-sm text-text-secondary font-medium">Describe un proceso para generar el diagrama</p>
-                  <p className="text-xs text-text-muted mt-1.5">Podes arrastrar nodos, conectarlos entre si, y agregar nuevos</p>
+                  <p className="text-sm font-medium" style={{ color: "#555" }}>Describe tu app para generar el mapa de pantallas</p>
+                  <p className="text-xs mt-1.5" style={{ color: "#999" }}>Podes arrastrar nodos, conectarlos entre si, y editar con doble click</p>
                   <div className="flex items-center justify-center gap-4 mt-4">
                     {Object.entries(NODE_COLORS).slice(0, 5).map(([key, c]) => (
                       <div key={key} className="w-3 h-3 rounded-full" style={{ background: c.accent }} title={key} />
