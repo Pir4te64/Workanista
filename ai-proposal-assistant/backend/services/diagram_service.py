@@ -58,14 +58,17 @@ class DiagramService:
         nodes = data.get("nodes", [])
         edges = data.get("edges", [])
 
-        # Ensure proper vertical layout positioning
+        # Ensure proper horizontal tree layout positioning
         for i, node in enumerate(nodes):
             if "position" not in node:
-                node["position"] = {"x": 250, "y": i * 200}
+                node["position"] = {"x": i * 300, "y": 300}
             if "type" not in node:
                 node["type"] = "custom"
             if "data" not in node:
-                node["data"] = {"label": f"Step {node.get('id', i+1)}", "description": ""}
+                node["data"] = {"label": f"Step {node.get('id', i+1)}", "description": "", "color": "blue"}
+            elif "color" not in node.get("data", {}):
+                colors = ["blue", "green", "purple", "orange", "cyan", "pink", "red"]
+                node["data"]["color"] = colors[i % len(colors)]
 
         # Ensure edge properties
         for edge in edges:

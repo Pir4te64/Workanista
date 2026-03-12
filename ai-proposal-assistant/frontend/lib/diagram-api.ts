@@ -4,7 +4,7 @@ export interface DiagramNode {
   id: string;
   type: string;
   position: { x: number; y: number };
-  data: { label: string; description?: string };
+  data: { label: string; description?: string; color?: string };
 }
 
 export interface DiagramEdge {
@@ -33,8 +33,13 @@ export async function generateDiagram(description: string): Promise<{ nodes: Dia
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ description }),
   });
-  if (!res.ok) throw new Error("Error al generar diagrama");
-  return res.json();
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    throw new Error(err || "Error al generar diagrama");
+  }
+  const json = await res.json();
+  // Backend wraps in { data: { nodes, edges } }
+  return json.data ?? json;
 }
 
 export async function listDiagrams(): Promise<Diagram[]> {
