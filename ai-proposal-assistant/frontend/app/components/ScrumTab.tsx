@@ -609,13 +609,13 @@ function SprintCard({
 
 // ─── Project Status Badge ────────────────────────────────────────────────────
 
-function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
-  const cfg: Record<ProjectStatus, { label: string; cls: string }> = {
+function ProjectStatusBadge({ status }: { status?: ProjectStatus | string }) {
+  const cfg: Record<string, { label: string; cls: string }> = {
     borrador: { label: "Borrador", cls: "text-zinc-400 bg-zinc-400/10 border-zinc-400/20" },
     activo: { label: "Activo", cls: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
     completado: { label: "Completado", cls: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
   };
-  const c = cfg[status];
+  const c = cfg[status ?? ""] ?? cfg.borrador;
   return <span className={`px-2 py-0.5 rounded text-xs font-medium border ${c.cls}`}>{c.label}</span>;
 }
 

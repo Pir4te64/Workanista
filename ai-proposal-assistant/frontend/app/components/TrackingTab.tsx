@@ -58,7 +58,7 @@ function StoryRow({
   onToggleStatus: (storyId: string) => void;
   saving: boolean;
 }) {
-  const sc = statusConfig[story.status];
+  const sc = statusConfig[story.status] ?? statusConfig.pendiente;
   const pc = priorityConfig[story.priority] ?? priorityConfig.media;
 
   return (
