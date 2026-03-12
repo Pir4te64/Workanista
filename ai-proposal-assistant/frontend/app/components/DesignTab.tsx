@@ -586,6 +586,27 @@ function DesignTabInner() {
     } catch { addToast("error", "Error al eliminar"); }
   };
 
+  // ─── Helper: load SVG logo as PNG data URL ──────────────────────────────
+  const loadLogoPng = (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        // Logo SVG viewBox is 192x34.3
+        const scale = 4;
+        canvas.width = 192 * scale;
+        canvas.height = 34.3 * scale;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject("No canvas ctx"); return; }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = reject;
+      img.src = "/LogoCruznegra.svg";
+    });
+  };
+
   // ─── PDF Export (captures ALL nodes, not just viewport) ──────────────────
   const handleExportPDF = async () => {
     setExporting(true);
@@ -594,6 +615,10 @@ function DesignTabInner() {
       const jsPDF = (await import("jspdf")).default;
 
       if (nodes.length === 0) return;
+
+      // Load logo in parallel
+      let logoPng: string | null = null;
+      try { logoPng = await loadLogoPng(); } catch { /* fallback to text */ }
 
       // Calculate bounds of all nodes
       const bounds = getNodesBounds(nodes);
@@ -604,16 +629,13 @@ function DesignTabInner() {
       // Save current viewport, then fit everything
       const prevViewport = reactFlowInstance.getViewport();
       reactFlowInstance.fitView({ padding: 0.1, duration: 0 });
-
-      // Wait for fitView to apply
       await new Promise((r) => setTimeout(r, 200));
 
       const el = containerRef.current?.querySelector(".react-flow__viewport") as HTMLElement | null;
       if (!el) return;
 
-      // Capture with full dimensions
       const dataUrl = await toPng(el, {
-        backgroundColor: "#F5F3EF",
+        backgroundColor: "#FFFFFF",
         pixelRatio: 2,
         width: fullW,
         height: fullH,
@@ -629,7 +651,6 @@ function DesignTabInner() {
         },
       });
 
-      // Restore previous viewport
       reactFlowInstance.setViewport(prevViewport, { duration: 0 });
 
       const img = new Image();
@@ -641,38 +662,51 @@ function DesignTabInner() {
       const PH = doc.internal.pageSize.getHeight();
       const M = 10;
 
+      // ── Header: Logo + date ──
+      if (logoPng) {
+        // Logo: 192x34.3 aspect ratio → ~48mm x 8.5mm
+        doc.addImage(logoPng, "PNG", M, M, 48, 8.5);
+      } else {
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        doc.text("CRUZNEGRA DEV LLC", M, M + 6);
+      }
       doc.setFontSize(8);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(30, 30, 30);
-      doc.text("CRUZNEGRA DEV LLC", M, M + 4);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 100, 100);
-      doc.text(new Date().toLocaleDateString("es-AR"), PW - M, M + 4, { align: "right" });
+      doc.setTextColor(0, 0, 0);
+      doc.text(new Date().toLocaleDateString("es-AR"), PW - M, M + 6, { align: "right" });
 
+      // ── Title ──
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(20, 20, 20);
-      doc.text(title || "Mapa de Pantallas", M, M + 12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(title || "Mapa de Pantallas", M, M + 16);
 
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.3);
-      doc.line(M, M + 15, PW - M, M + 15);
+      // ── Separator line (black) ──
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.4);
+      doc.line(M, M + 19, PW - M, M + 19);
 
-      const imgTop = M + 20;
+      // ── Diagram image ──
+      const imgTop = M + 23;
       const availW = PW - M * 2;
-      const availH = PH - imgTop - 15;
+      const availH = PH - imgTop - 12;
       const ratio = Math.min(availW / img.width, availH / img.height);
       const imgW = img.width * ratio;
       const imgH = img.height * ratio;
       const imgX = M + (availW - imgW) / 2;
-
       doc.addImage(dataUrl, "PNG", imgX, imgTop, imgW, imgH);
 
+      // ── Footer (black) ──
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.2);
+      doc.line(M, PH - 10, PW - M, PH - 10);
       doc.setFontSize(7);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(150, 150, 150);
+      doc.setTextColor(0, 0, 0);
       doc.text("CruzNegraDev LLC  |  Victor Manuel Moreira", M, PH - 6);
-      doc.text("1 / 1", PW - M, PH - 6, { align: "right" });
+      doc.text("Pag. 1 / 1", PW - M, PH - 6, { align: "right" });
 
       doc.save(`Diagrama_${title.replace(/\s+/g, "_") || "flow"}.pdf`);
       addToast("success", "PDF exportado");
