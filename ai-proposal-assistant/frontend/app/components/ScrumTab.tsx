@@ -155,53 +155,64 @@ async function exportToPDF(project: ScrumFull) {
   const PW = doc.internal.pageSize.getWidth();
   const PH = doc.internal.pageSize.getHeight();
   const M = 15;
-  const CW = PW - M * 2;
+  const CW = PW - M * 2; // 180mm
 
   type RGB = [number, number, number];
-  const BLACK: RGB = [15, 15, 30];
-  const MINT: RGB = [0, 200, 130];
-  const GRAY: RGB = [120, 120, 140];
-  const LIGHT: RGB = [240, 240, 248];
+  const BLACK: RGB = [0, 0, 0];
+  const DARK_GRAY: RGB = [51, 51, 51];     // #333333
+  const MID_GRAY: RGB = [100, 100, 100];
   const WHITE: RGB = [255, 255, 255];
-  const DARK_BG: RGB = [28, 28, 54];
+  const ALT_ROW: RGB = [245, 245, 245];    // #F5F5F5
+  const HEADER_BG: RGB = [51, 51, 51];     // #333333
 
   const setColor = (c: readonly number[]) => doc.setTextColor(c[0], c[1], c[2]);
-  const setFill = (c: readonly number[]) => doc.setFillColor(c[0], c[1], c[2]);
 
   let y = M;
 
-  setFill(DARK_BG);
-  doc.rect(0, 0, PW, 52, "F");
-  setColor(MINT);
-  doc.setFontSize(11);
+  // ── Header: CRUZNEGRA DEV LLC left, SPRINT PLANNING right ──
+  setColor(BLACK);
+  doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("CruzNegraDev LLC", M, y + 6);
-  setColor(WHITE);
-  doc.setFontSize(22);
+  doc.text("\u271A  CRUZNEGRA DEV LLC", M, y + 6);
+  setColor(DARK_GRAY);
+  doc.setFontSize(18);
   doc.text("SPRINT PLANNING", PW - M, y + 6, { align: "right" });
-  y += 16;
-  setColor(LIGHT);
+
+  // Thin separator line
+  y += 10;
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.4);
+  doc.line(M, y, PW - M, y);
+  y += 6;
+
+  // Project name
+  setColor(BLACK);
   doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
   doc.text(project.project_name, M, y);
-  y += 7;
-  setColor([170, 170, 200] as RGB);
+  y += 6;
+
+  // Client + date meta line
+  setColor(MID_GRAY);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   const meta: string[] = [];
   if (project.client_name) meta.push(`Cliente: ${project.client_name}`);
   meta.push(`Generado: ${new Date().toLocaleDateString("es-AR")}`);
-  doc.text(meta.join("   ·   "), M, y);
-  y = 60;
+  doc.text(meta.join("   |   "), M, y);
+  y += 8;
 
+  // ── Summary ──
   if (project.data.summary) {
-    setColor(BLACK);
+    setColor(DARK_GRAY);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     const lines = doc.splitTextToSize(project.data.summary, CW);
     doc.text(lines, M, y);
-    y += lines.length * 5 + 4;
+    y += lines.length * 4.5 + 4;
   }
 
+  // ── Overview table ──
   const totalSprints = project.data.sprints.length;
   const totalPoints = project.data.sprints.reduce((s, sp) => s + sprintPoints(sp), 0);
   const totalStories = project.data.sprints.reduce((s, sp) => s + sp.stories.length, 0);
@@ -212,113 +223,135 @@ async function exportToPDF(project: ScrumFull) {
     head: [["Sprints", "Total Story Points", "User Stories", "Velocidad recomendada"]],
     body: [[`${totalSprints} sprints`, `${totalPoints} puntos`, `${totalStories} historias`, `${velocity} pts/sprint`]],
     margin: { left: M, right: M },
-    headStyles: { fillColor: [0, 200, 130], textColor: [15, 15, 30], fontStyle: "bold", fontSize: 8 },
+    styles: { overflow: "linebreak", cellPadding: 2 },
+    headStyles: { fillColor: HEADER_BG, textColor: WHITE, fontStyle: "bold", fontSize: 8 },
     bodyStyles: { fontSize: 9, textColor: BLACK, halign: "center" },
     columnStyles: { 0: { halign: "center" }, 1: { halign: "center" }, 2: { halign: "center" }, 3: { halign: "center" } },
   });
 
   y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
 
+  // ── Sprint sections ──
   for (const sprint of project.data.sprints) {
     const points = sprintPoints(sprint);
     const completedStories = sprint.stories.filter((s) => s.status === "completada").length;
     if (y > PH - 60) { doc.addPage(); y = M; }
 
-    setFill(DARK_BG);
-    doc.roundedRect(M, y, CW, 18, 2, 2, "F");
-    setColor(MINT);
-    doc.setFontSize(10);
+    // Sprint header — black text on white, with a thin underline
+    setColor(BLACK);
+    doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.text(`Sprint ${sprint.number}: ${sprint.name}`, M + 4, y + 7);
-    setColor([170, 170, 200] as RGB);
+    doc.text(`Sprint ${sprint.number}: ${sprint.name}`, M, y + 5);
+    setColor(MID_GRAY);
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.text(`${points} pts  ·  ${sprint.stories.length} historias  ·  ${sprint.duration_weeks} semanas  ·  ${completedStories}/${sprint.stories.length} completadas`, PW - M - 4, y + 7, { align: "right" });
+    doc.text(`${points} pts  |  ${sprint.stories.length} historias  |  ${sprint.duration_weeks} sem.  |  ${completedStories}/${sprint.stories.length} completadas`, PW - M, y + 5, { align: "right" });
+    y += 8;
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.2);
+    doc.line(M, y, PW - M, y);
+    y += 2;
 
     if (sprint.goal) {
-      setColor(GRAY);
+      setColor(MID_GRAY);
       doc.setFontSize(8);
       doc.setFont("helvetica", "italic");
-      const goalLines = doc.splitTextToSize(`Objetivo: ${sprint.goal}`, CW - 8);
-      doc.text(goalLines, M + 4, y + 14);
-      y += goalLines.length * 4;
+      const goalLines = doc.splitTextToSize(`Objetivo: ${sprint.goal}`, CW - 4);
+      doc.text(goalLines, M + 2, y + 4);
+      y += goalLines.length * 4 + 4;
     }
-    y += 22;
+    y += 4;
 
+    // ── Stories table — B&W with proper column widths ──
     if (sprint.stories.length > 0) {
       const rows = sprint.stories.map((story, i) => {
-        const statusLabel = story.status === "completada" ? "✓ Completada" : story.status === "en_progreso" ? "► En progreso" : "○ Pendiente";
-        return [`${i + 1}`, story.title || "(sin título)", story.acceptance_criteria.filter(Boolean).join("\n") || "—", `${story.story_points}pt`, story.priority.toUpperCase(), statusLabel];
+        const statusLabel = story.status === "completada" ? "Completada" : story.status === "en_progreso" ? "En progreso" : "Pendiente";
+        return [
+          `${i + 1}`,
+          story.title || "(sin titulo)",
+          story.acceptance_criteria.filter(Boolean).join("\n") || "—",
+          `${story.story_points}`,
+          story.priority.charAt(0).toUpperCase() + story.priority.slice(1),
+          statusLabel,
+        ];
       });
       autoTable(doc, {
         startY: y,
-        head: [["#", "Historia de usuario", "Criterios de aceptación", "Pts", "Prior.", "Estado"]],
+        head: [["#", "Historia de usuario", "Criterios de aceptacion", "Pts", "Prioridad", "Estado"]],
         body: rows,
         margin: { left: M, right: M },
-        headStyles: { fillColor: [40, 40, 70], textColor: WHITE, fontStyle: "bold", fontSize: 7.5 },
-        bodyStyles: { fontSize: 7.5, textColor: BLACK, valign: "top" },
-        columnStyles: { 0: { cellWidth: 8, halign: "center" }, 1: { cellWidth: 62 }, 2: { cellWidth: 58 }, 3: { cellWidth: 12, halign: "center" }, 4: { cellWidth: 14, halign: "center" }, 5: { cellWidth: 26, halign: "center" } },
-        alternateRowStyles: { fillColor: [245, 245, 252] },
+        styles: { overflow: "linebreak", cellPadding: 2, fontSize: 7.5, textColor: BLACK },
+        headStyles: { fillColor: HEADER_BG, textColor: WHITE, fontStyle: "bold", fontSize: 7.5 },
+        bodyStyles: { valign: "top" },
+        columnStyles: {
+          0: { cellWidth: 8, halign: "center" },
+          1: { cellWidth: 55 },
+          2: { cellWidth: 55 },
+          3: { cellWidth: 12, halign: "center" },
+          4: { cellWidth: 18, halign: "center" },
+          5: { cellWidth: 32, halign: "center" },
+        },
+        alternateRowStyles: { fillColor: ALT_ROW },
         didParseCell: (data) => {
-          if (data.column.index === 3) {
-            const val = Number(String(data.cell.text).replace("pt", ""));
-            if (val >= 13) data.cell.styles.textColor = [200, 60, 60];
-            else if (val >= 5) data.cell.styles.textColor = [180, 140, 0];
-            else data.cell.styles.textColor = [30, 160, 100];
-          }
-          if (data.column.index === 4) {
+          // Bold for high priority
+          if (data.section === "body" && data.column.index === 4) {
             const v = String(data.cell.text).toLowerCase();
-            if (v === "alta") data.cell.styles.textColor = [200, 60, 60];
-            else if (v === "media") data.cell.styles.textColor = [180, 140, 0];
-            else data.cell.styles.textColor = [30, 160, 100];
+            if (v === "alta") {
+              data.cell.styles.fontStyle = "bold";
+            }
           }
         },
       });
       y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
     }
 
+    // ── Deliverables ──
     if (sprint.deliverables.filter((d) => d.title).length > 0) {
       if (y > PH - 30) { doc.addPage(); y = M; }
-      setColor([80, 80, 100] as [number,number,number]);
+      setColor(DARK_GRAY);
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
       doc.text("Entregables del sprint:", M, y + 4);
       y += 8;
       for (const del of sprint.deliverables.filter((d) => d.title)) {
-        setColor(GRAY);
+        setColor(MID_GRAY);
         doc.setFontSize(7.5);
         doc.setFont("helvetica", "normal");
-        doc.text(`• ${del.title}${del.description ? `: ${del.description}` : ""}`, M + 3, y);
-        y += 5;
+        const delText = `- ${del.title}${del.description ? `: ${del.description}` : ""}`;
+        const delLines = doc.splitTextToSize(delText, CW - 6);
+        doc.text(delLines, M + 3, y);
+        y += delLines.length * 4;
       }
     }
     y += 8;
   }
 
+  // ── Notes ──
   if (project.data.notes) {
     if (y > PH - 30) { doc.addPage(); y = M; }
-    setColor([80, 80, 100] as [number,number,number]);
+    setColor(BLACK);
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.text("Notas y consideraciones:", M, y);
     y += 5;
-    setColor(GRAY);
+    setColor(DARK_GRAY);
     doc.setFont("helvetica", "normal");
     const noteLines = doc.splitTextToSize(project.data.notes, CW);
     doc.text(noteLines, M, y);
   }
 
+  // ── Footer on every page ──
   const totalPages = (doc as unknown as { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    setColor([150, 150, 170] as [number,number,number]);
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    doc.line(M, PH - 12, PW - M, PH - 12);
+    setColor(MID_GRAY);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text("CruzNegraDev LLC  ·  Victor Manuel Moreira", M, PH - 8);
+    doc.text("CruzNegra Dev LLC  |  Victor Manuel Moreira", M, PH - 8);
     doc.text(`${i} / ${totalPages}`, PW - M, PH - 8, { align: "right" });
-    doc.setDrawColor(50, 50, 80);
-    doc.setLineWidth(0.3);
-    doc.line(M, PH - 12, PW - M, PH - 12);
   }
 
   const name = `SprintPlan_${project.project_name.replace(/\s+/g, "_") || "draft"}.pdf`;

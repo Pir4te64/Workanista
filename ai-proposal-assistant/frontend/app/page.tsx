@@ -11,6 +11,7 @@ import InvoiceTab from "./components/InvoiceTab";
 import CalendarTab from "./components/CalendarTab";
 import ScrumTab from "./components/ScrumTab";
 import TrackingTab from "./components/TrackingTab";
+import DesignTab from "./components/DesignTab";
 import DashboardSummary from "./components/DashboardSummary";
 import { FadeIn } from "./components/AnimatedList";
 import { useToast } from "./components/Toast";
@@ -109,6 +110,15 @@ function IconTracking({ className = "w-5 h-5" }: { className?: string }) {
 }
 
 
+function IconDesign({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+    </svg>
+  );
+}
+
 function IconCollapse({ collapsed, className = "w-5 h-5" }: { collapsed: boolean; className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -140,6 +150,7 @@ const NAV_ITEMS = [
   { key: "calendar", label: "Calendario", icon: "calendar" },
   { key: "scrum", label: "Planificacion", icon: "scrum" },
   { key: "tracking", label: "Seguimiento", icon: "tracking" },
+  { key: "design", label: "Diagramas", icon: "design" },
 ] as const;
 
 type TabKey = (typeof NAV_ITEMS)[number]["key"];
@@ -240,6 +251,7 @@ export default function Home() {
               {item.icon === "calendar" && <IconCalendar />}
               {item.icon === "scrum" && <IconScrum />}
               {item.icon === "tracking" && <IconTracking />}
+              {item.icon === "design" && <IconDesign />}
               {!sidebarCollapsed && (
                 <span className="text-sm">{item.label}</span>
               )}
@@ -406,6 +418,10 @@ export default function Home() {
 
           <div className={activeTab === "tracking" ? "" : "hidden"}>
             <TrackingTab />
+          </div>
+
+          <div className={activeTab === "design" ? "" : "hidden"}>
+            <DesignTab />
           </div>
         </div>
       </main>

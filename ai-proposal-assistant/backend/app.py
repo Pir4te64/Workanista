@@ -10,6 +10,7 @@ from services.coldduck.coldduck_service import ColdDuckService
 from services.google_calendar_service import GoogleCalendarService
 from services.planning_service import PlanningService
 from services.scrum_service import ScrumService
+from services.diagram_service import DiagramService
 from database.supabase_client import SupabaseClient
 from database.vector_store import VectorStore
 from utils.logger import logger
@@ -37,6 +38,7 @@ coldduck = ColdDuckService(db)
 google_cal = GoogleCalendarService(db)
 planning_svc = PlanningService(db)
 scrum_svc = ScrumService(db)
+diagram_svc = DiagramService(db)
 
 
 class ProposalRequest(BaseModel):
@@ -1004,6 +1006,106 @@ async def scrum_delete(project_id: str):
         return {"status": "ok"}
     except Exception as e:
         logger.error(f"Scrum delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Diagrams ──────────────────────────────────────────────────────────────────
+
+
+class DiagramGenerateRequest(BaseModel):
+    description: str
+
+
+class DiagramSaveRequest(BaseModel):
+    title: str = "Sin título"
+    description: str = ""
+    nodes: list = []
+    edges: list = []
+    scrum_project_id: Optional[str] = None
+
+
+class DiagramUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    nodes: Optional[list] = None
+    edges: Optional[list] = None
+    scrum_project_id: Optional[str] = None
+
+
+@app.post("/api/diagrams/generate")
+async def generate_diagram(request: DiagramGenerateRequest):
+    """Generate a diagram from description using AI."""
+    try:
+        data = await diagram_svc.generate_diagram(request.description)
+        return {"data": data}
+    except Exception as e:
+        logger.error(f"Diagram generate error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/diagrams")
+async def list_diagrams():
+    """List all saved diagrams."""
+    try:
+        diagrams = diagram_svc.list_all()
+        return {"diagrams": diagrams}
+    except Exception as e:
+        logger.error(f"Diagram list error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/diagrams/{diagram_id}")
+async def get_diagram(diagram_id: str):
+    """Get a specific diagram."""
+    try:
+        record = diagram_svc.get(diagram_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="Diagram not found")
+        return {"diagram": record}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Diagram get error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/diagrams")
+async def save_diagram(request: DiagramSaveRequest):
+    """Save a diagram."""
+    try:
+        record = diagram_svc.save(
+            title=request.title,
+            description=request.description,
+            nodes=request.nodes,
+            edges=request.edges,
+            scrum_project_id=request.scrum_project_id,
+        )
+        return {"diagram": record}
+    except Exception as e:
+        logger.error(f"Diagram save error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/diagrams/{diagram_id}")
+async def update_diagram(diagram_id: str, request: DiagramUpdateRequest):
+    """Update a diagram."""
+    try:
+        payload = {k: v for k, v in request.model_dump().items() if v is not None}
+        record = diagram_svc.update(diagram_id, payload)
+        return {"diagram": record}
+    except Exception as e:
+        logger.error(f"Diagram update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/diagrams/{diagram_id}")
+async def delete_diagram(diagram_id: str):
+    """Delete a diagram."""
+    try:
+        diagram_svc.delete(diagram_id)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Diagram delete error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
