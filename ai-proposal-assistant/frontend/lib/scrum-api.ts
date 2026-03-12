@@ -41,11 +41,15 @@ export interface ScrumData {
   notes?: string;
 }
 
+export type ProjectStatus = "borrador" | "activo" | "completado";
+
 export interface ScrumSummary {
   id: string;
   project_name: string;
   client_name: string;
   description: string;
+  status: ProjectStatus;
+  started_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -116,4 +120,25 @@ export async function updateScrumData(projectId: string, data: ScrumData): Promi
 export async function deleteScrum(projectId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/scrum/${projectId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Error al eliminar proyecto");
+}
+
+export async function updateScrumStatus(
+  projectId: string,
+  status: ProjectStatus
+): Promise<ScrumFull> {
+  const res = await fetch(`${API_BASE}/scrum/${projectId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error("Error al actualizar estado");
+  const json = await res.json();
+  return json.project;
+}
+
+export async function listActiveScrum(): Promise<ScrumFull[]> {
+  const res = await fetch(`${API_BASE}/scrum/active/list`);
+  if (!res.ok) throw new Error("Error al obtener proyectos activos");
+  const json = await res.json();
+  return json.projects;
 }

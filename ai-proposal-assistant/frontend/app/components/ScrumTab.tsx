@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "./Toast";
 import {
-  generateScrum, saveScrum, listScrum, getScrum, updateScrumData, deleteScrum,
+  generateScrum, saveScrum, listScrum, getScrum, deleteScrum, updateScrumStatus,
 } from "@/lib/scrum-api";
 import type {
   ScrumData, ScrumFull, ScrumSummary, Sprint, UserStory, SprintDeliverable,
-  StoryStatus, StoryPriority,
+  StoryStatus, StoryPriority, ProjectStatus,
 } from "@/lib/scrum-api";
 import { FIBONACCI } from "@/lib/scrum-api";
 
@@ -711,7 +711,7 @@ export default function ScrumTab() {
     try {
       const data = await generateScrum(newDesc);
       if (!newName.trim()) setNewName("Mi proyecto");
-      setCurrent({ id: "", project_name: newName || "Mi proyecto", client_name: newClient, description: newDesc, data, created_at: "", updated_at: "" });
+      setCurrent({ id: "", project_name: newName || "Mi proyecto", client_name: newClient, description: newDesc, data, status: "borrador", started_at: null, created_at: "", updated_at: "" });
       setLocalData(data);
       setEditMode(true);
       setIsCreating(false);
@@ -721,7 +721,7 @@ export default function ScrumTab() {
 
   const handleStartManual = () => {
     const data = emptyProject();
-    setCurrent({ id: "", project_name: newName || "Mi proyecto", client_name: newClient, description: newDesc, data, created_at: "", updated_at: "" });
+    setCurrent({ id: "", project_name: newName || "Mi proyecto", client_name: newClient, description: newDesc, data, status: "borrador", started_at: null, created_at: "", updated_at: "" });
     setLocalData(data);
     setEditMode(true);
     setIsCreating(false);
@@ -754,6 +754,16 @@ export default function ScrumTab() {
       setProjects((p) => p.filter((x) => x.id !== id));
       if (current?.id === id) { setCurrent(null); setLocalData(null); }
     } catch { addToast("error", "Error al eliminar"); }
+  };
+
+  const handleSetStatus = async (status: ProjectStatus) => {
+    if (!current?.id) return;
+    try {
+      const updated = await updateScrumStatus(current.id, status);
+      setCurrent(updated);
+      setProjects((p) => p.map((x) => x.id === updated.id ? { ...x, status: updated.status } : x));
+      addToast("success", status === "activo" ? "Proyecto activado — ya aparece en Seguimiento" : status === "completado" ? "Proyecto completado" : "Proyecto vuelto a borrador");
+    } catch { addToast("error", "Error al cambiar estado"); }
   };
 
   const handleExportPDF = async () => {
@@ -905,7 +915,36 @@ export default function ScrumTab() {
                     </>
                   )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                  {/* Status badge */}
+                  {current?.status && (
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
+                      current.status === "activo" ? "text-brand-mint border-brand-mint/30 bg-brand-mint/10" :
+                      current.status === "completado" ? "text-blue-400 border-blue-400/30 bg-blue-400/10" :
+                      "text-text-muted border-white/10 bg-white/4"
+                    }`}>
+                      {current.status === "activo" ? "● Activo" : current.status === "completado" ? "✓ Completado" : "Borrador"}
+                    </span>
+                  )}
+                  {/* Status action buttons */}
+                  {current?.id && current.status === "borrador" && (
+                    <button onClick={() => handleSetStatus("activo")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all text-brand-mint border-brand-mint/30 bg-brand-mint/8 hover:bg-brand-mint/15">
+                      Activar proyecto
+                    </button>
+                  )}
+                  {current?.id && current.status === "activo" && (
+                    <button onClick={() => handleSetStatus("completado")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all text-blue-400 border-blue-400/30 bg-blue-400/8 hover:bg-blue-400/15">
+                      Completar
+                    </button>
+                  )}
+                  {current?.id && current.status !== "borrador" && (
+                    <button onClick={() => handleSetStatus("borrador")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all text-text-muted border-white/10 bg-white/4 hover:text-text-primary">
+                      Volver a borrador
+                    </button>
+                  )}
                   <button onClick={() => setEditMode(!editMode)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${editMode ? "text-brand-mint border-brand-mint/30 bg-brand-mint/8" : "text-text-muted border-white/8 bg-white/4 hover:text-text-primary"}`}>
                     <IconEdit className="w-3.5 h-3.5" />{editMode ? "Vista" : "Editar"}

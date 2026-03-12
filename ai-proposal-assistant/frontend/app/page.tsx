@@ -10,6 +10,7 @@ import BudgetTab from "./components/BudgetTab";
 import InvoiceTab from "./components/InvoiceTab";
 import CalendarTab from "./components/CalendarTab";
 import ScrumTab from "./components/ScrumTab";
+import TrackingTab from "./components/TrackingTab";
 import DashboardSummary from "./components/DashboardSummary";
 import { FadeIn } from "./components/AnimatedList";
 import { useToast } from "./components/Toast";
@@ -99,6 +100,14 @@ function IconScrum({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+function IconTracking({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+    </svg>
+  );
+}
+
 
 function IconCollapse({ collapsed, className = "w-5 h-5" }: { collapsed: boolean; className?: string }) {
   return (
@@ -130,6 +139,7 @@ const NAV_ITEMS = [
   { key: "invoice", label: "Invoice", icon: "invoice" },
   { key: "calendar", label: "Calendario", icon: "calendar" },
   { key: "scrum", label: "Planificacion", icon: "scrum" },
+  { key: "tracking", label: "Seguimiento", icon: "tracking" },
 ] as const;
 
 type TabKey = (typeof NAV_ITEMS)[number]["key"];
@@ -229,6 +239,7 @@ export default function Home() {
               {item.icon === "invoice" && <IconInvoice />}
               {item.icon === "calendar" && <IconCalendar />}
               {item.icon === "scrum" && <IconScrum />}
+              {item.icon === "tracking" && <IconTracking />}
               {!sidebarCollapsed && (
                 <span className="text-sm">{item.label}</span>
               )}
@@ -391,6 +402,10 @@ export default function Home() {
 
           <div className={activeTab === "scrum" ? "" : "hidden"}>
             <ScrumTab />
+          </div>
+
+          <div className={activeTab === "tracking" ? "" : "hidden"}>
+            <TrackingTab />
           </div>
         </div>
       </main>

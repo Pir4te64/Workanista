@@ -1010,3 +1010,49 @@ async def scrum_delete(project_id: str):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+
+
+class ScrumStatusRequest(BaseModel):
+    status: str  # borrador | activo | completado
+
+
+@app.patch("/scrum/{project_id}/status")
+async def scrum_update_status(project_id: str, request: ScrumStatusRequest):
+    try:
+        if request.status not in ("borrador", "activo", "completado"):
+            raise HTTPException(status_code=400, detail="Invalid status")
+        payload: dict = {"status": request.status}
+        if request.status == "activo":
+            from datetime import datetime, timezone
+            payload["started_at"] = datetime.now(timezone.utc).isoformat()
+        result = (
+            db.client.table("scrum_projects")
+            .update(payload)
+            .eq("id", project_id)
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+        return {"project": result.data[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Scrum status update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/scrum/active/list")
+async def scrum_list_active():
+    """Return all active projects with full data for the tracking view."""
+    try:
+        result = (
+            db.client.table("scrum_projects")
+            .select("*")
+            .eq("status", "activo")
+            .order("started_at", desc=True)
+            .execute()
+        )
+        return {"projects": result.data or []}
+    except Exception as e:
+        logger.error(f"Scrum active list error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
