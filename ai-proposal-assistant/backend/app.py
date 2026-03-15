@@ -11,6 +11,7 @@ from services.google_calendar_service import GoogleCalendarService
 from services.planning_service import PlanningService
 from services.scrum_service import ScrumService
 from services.diagram_service import DiagramService
+from services.ocr_service import OcrService
 from database.supabase_client import SupabaseClient
 from database.vector_store import VectorStore
 from utils.logger import logger
@@ -39,6 +40,7 @@ google_cal = GoogleCalendarService(db)
 planning_svc = PlanningService(db)
 scrum_svc = ScrumService(db)
 diagram_svc = DiagramService(db)
+ocr_svc = OcrService()
 
 
 class ProposalRequest(BaseModel):
@@ -77,6 +79,25 @@ class ColdDuckResultRequest(BaseModel):
 class ColdDuckVideoStatusRequest(BaseModel):
     video_id: str
     outreach_id: str
+
+
+class OcrGenerateRequest(BaseModel):
+    image_base64: str
+    mime_type: str = "image/png"
+    description: str = ""
+
+
+class OcrRefineRequest(BaseModel):
+    code: str
+    correction: str
+    history: list = []
+
+
+class OcrSaveRequest(BaseModel):
+    name: str
+    code: str
+    tags: list = []
+    description: str = ""
 
 
 class ColdDuckMessageRequest(BaseModel):
@@ -1157,4 +1178,88 @@ async def scrum_list_active():
         return {"projects": result.data or []}
     except Exception as e:
         logger.error(f"Scrum active list error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── OCR Component Generator ────────────────────────────────────────────
+
+
+@app.post("/api/ocr/generate")
+async def ocr_generate(request: OcrGenerateRequest):
+    try:
+        code = ocr_svc.generate_component(
+            image_base64=request.image_base64,
+            mime_type=request.mime_type,
+            description=request.description
+        )
+        return {"code": code}
+    except Exception as e:
+        logger.error(f"OCR generate error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/ocr/refine")
+async def ocr_refine(request: OcrRefineRequest):
+    try:
+        code = ocr_svc.refine_component(
+            code=request.code,
+            correction=request.correction,
+            history=request.history
+        )
+        return {"code": code}
+    except Exception as e:
+        logger.error(f"OCR refine error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/ocr/save")
+async def ocr_save(request: OcrSaveRequest):
+    try:
+        entry = ocr_svc.save_component(
+            name=request.name,
+            code=request.code,
+            tags=request.tags,
+            description=request.description
+        )
+        return {"component": entry}
+    except Exception as e:
+        logger.error(f"OCR save error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/ocr/library")
+async def ocr_library():
+    try:
+        components = ocr_svc.list_components()
+        return {"components": components}
+    except Exception as e:
+        logger.error(f"OCR library error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/ocr/library/{name}")
+async def ocr_get_component(name: str):
+    try:
+        component = ocr_svc.get_component(name)
+        if not component:
+            raise HTTPException(status_code=404, detail="Component not found")
+        return {"component": component}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"OCR get component error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/ocr/library/{name}")
+async def ocr_delete_component(name: str):
+    try:
+        deleted = ocr_svc.delete_component(name)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Component not found")
+        return {"deleted": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"OCR delete error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

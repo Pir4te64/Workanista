@@ -12,6 +12,7 @@ import CalendarTab from "./components/CalendarTab";
 import ScrumTab from "./components/ScrumTab";
 import TrackingTab from "./components/TrackingTab";
 import DesignTab from "./components/DesignTab";
+import OcrGeneratorTab from "./components/OcrGeneratorTab";
 import DashboardSummary from "./components/DashboardSummary";
 import { FadeIn } from "./components/AnimatedList";
 import { useToast } from "./components/Toast";
@@ -119,6 +120,16 @@ function IconDesign({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+function IconOcr({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M7 8h4M7 12h10M7 16h6" />
+      <circle cx="17" cy="8" r="2" />
+    </svg>
+  );
+}
+
 function IconCollapse({ collapsed, className = "w-5 h-5" }: { collapsed: boolean; className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -151,6 +162,7 @@ const NAV_ITEMS = [
   { key: "scrum", label: "Planificacion", icon: "scrum" },
   { key: "tracking", label: "Seguimiento", icon: "tracking" },
   { key: "design", label: "Diagramas", icon: "design" },
+  { key: "ocr", label: "OCR Generator", icon: "ocr" },
 ] as const;
 
 type TabKey = (typeof NAV_ITEMS)[number]["key"];
@@ -252,6 +264,7 @@ export default function Home() {
               {item.icon === "scrum" && <IconScrum />}
               {item.icon === "tracking" && <IconTracking />}
               {item.icon === "design" && <IconDesign />}
+              {item.icon === "ocr" && <IconOcr />}
               {!sidebarCollapsed && (
                 <span className="text-sm">{item.label}</span>
               )}
@@ -422,6 +435,10 @@ export default function Home() {
 
           <div className={activeTab === "design" ? "" : "hidden"}>
             <DesignTab />
+          </div>
+
+          <div className={activeTab === "ocr" ? "" : "hidden"}>
+            <OcrGeneratorTab />
           </div>
         </div>
       </main>
