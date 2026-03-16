@@ -22,6 +22,34 @@ interface LibraryComponent {
   code?: string;
 }
 
+interface ColorEntry {
+  name: string;
+  value: string;
+  usage: string;
+}
+
+interface FontEntry {
+  name: string;
+  usage: string;
+}
+
+interface BrandPreset {
+  name: string;
+  project: string;
+  colors: ColorEntry[];
+  fonts: FontEntry[];
+  borderRadius: string;
+  spacing: string;
+  extraNotes: string;
+  created_at?: string;
+}
+
+interface PresetListItem {
+  name: string;
+  project: string;
+  created_at: string;
+}
+
 /* ── Sub-components ────────────────────────────────────────── */
 
 function ImageUploader({
@@ -552,6 +580,220 @@ function CodeModal({
   );
 }
 
+/* ── Preset Editor Modal ───────────────────────────────────── */
+
+function PresetEditorModal({
+  existing,
+  onClose,
+  onSaved,
+}: {
+  existing: BrandPreset | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [name, setName] = useState(existing?.name || "");
+  const [project, setProject] = useState(existing?.project || "");
+  const [colors, setColors] = useState<ColorEntry[]>(
+    existing?.colors?.length ? existing.colors : [{ name: "Primary", value: "#000000", usage: "botones, links" }]
+  );
+  const [fonts, setFonts] = useState<FontEntry[]>(
+    existing?.fonts?.length ? existing.fonts : [{ name: "Inter", usage: "todo el UI" }]
+  );
+  const [borderRadius, setBorderRadius] = useState(existing?.borderRadius || "");
+  const [spacing, setSpacing] = useState(existing?.spacing || "");
+  const [extraNotes, setExtraNotes] = useState(existing?.extraNotes || "");
+  const [saving, setSaving] = useState(false);
+
+  const updateColor = (i: number, field: keyof ColorEntry, val: string) => {
+    setColors((prev) => prev.map((c, idx) => (idx === i ? { ...c, [field]: val } : c)));
+  };
+  const addColor = () => setColors((prev) => [...prev, { name: "", value: "#000000", usage: "" }]);
+  const removeColor = (i: number) => setColors((prev) => prev.filter((_, idx) => idx !== i));
+
+  const updateFont = (i: number, field: keyof FontEntry, val: string) => {
+    setFonts((prev) => prev.map((f, idx) => (idx === i ? { ...f, [field]: val } : f)));
+  };
+  const addFont = () => setFonts((prev) => [...prev, { name: "", usage: "" }]);
+  const removeFont = (i: number) => setFonts((prev) => prev.filter((_, idx) => idx !== i));
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await fetch(`${API}/api/ocr/presets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          project: project.trim(),
+          colors: colors.filter((c) => c.name || c.value !== "#000000"),
+          fonts: fonts.filter((f) => f.name),
+          borderRadius: borderRadius.trim(),
+          spacing: spacing.trim(),
+          extraNotes: extraNotes.trim(),
+        }),
+      });
+      onSaved();
+      onClose();
+    } catch (err) {
+      console.error("Preset save error:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputCls =
+    "w-full bg-[#151515] text-sm text-text-primary px-3 py-2 rounded-lg border border-[#1e1e1e] focus:border-brand-mint/40 outline-none";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div
+        className="bg-[#111] border border-[#1e1e1e] rounded-xl p-6 w-full max-w-lg max-h-[85vh] overflow-auto space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-semibold text-text-primary">
+          {existing ? "Editar Preset" : "Nuevo Preset de Marca"}
+        </h3>
+
+        {/* Name + Project */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-text-muted block mb-1">Nombre del preset *</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="MiApp" />
+          </div>
+          <div>
+            <label className="text-xs text-text-muted block mb-1">Proyecto</label>
+            <input value={project} onChange={(e) => setProject(e.target.value)} className={inputCls} placeholder="Nombre del proyecto" />
+          </div>
+        </div>
+
+        {/* Colors */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs text-text-muted font-medium">Colores de marca</label>
+            <button onClick={addColor} className="text-[10px] px-2 py-0.5 bg-brand-mint/10 text-brand-mint rounded hover:bg-brand-mint/20 transition-colors">
+              + Color
+            </button>
+          </div>
+          <div className="space-y-2">
+            {colors.map((c, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={c.value}
+                  onChange={(e) => updateColor(i, "value", e.target.value)}
+                  className="w-8 h-8 rounded border border-[#1e1e1e] cursor-pointer bg-transparent shrink-0"
+                />
+                <input
+                  value={c.name}
+                  onChange={(e) => updateColor(i, "name", e.target.value)}
+                  className="flex-1 bg-[#151515] text-xs text-text-primary px-2 py-1.5 rounded border border-[#1e1e1e] focus:border-brand-mint/40 outline-none"
+                  placeholder="Nombre (ej: Primary)"
+                />
+                <input
+                  value={c.usage}
+                  onChange={(e) => updateColor(i, "usage", e.target.value)}
+                  className="flex-1 bg-[#151515] text-xs text-text-primary px-2 py-1.5 rounded border border-[#1e1e1e] focus:border-brand-mint/40 outline-none"
+                  placeholder="Uso (ej: botones)"
+                />
+                {colors.length > 1 && (
+                  <button onClick={() => removeColor(i)} className="text-text-muted hover:text-red-400 shrink-0">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Fonts */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs text-text-muted font-medium">Tipografias</label>
+            <button onClick={addFont} className="text-[10px] px-2 py-0.5 bg-brand-mint/10 text-brand-mint rounded hover:bg-brand-mint/20 transition-colors">
+              + Fuente
+            </button>
+          </div>
+          <div className="space-y-2">
+            {fonts.map((f, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  value={f.name}
+                  onChange={(e) => updateFont(i, "name", e.target.value)}
+                  className="flex-1 bg-[#151515] text-xs text-text-primary px-2 py-1.5 rounded border border-[#1e1e1e] focus:border-brand-mint/40 outline-none"
+                  placeholder="Nombre (ej: Inter, Poppins)"
+                />
+                <input
+                  value={f.usage}
+                  onChange={(e) => updateFont(i, "usage", e.target.value)}
+                  className="flex-1 bg-[#151515] text-xs text-text-primary px-2 py-1.5 rounded border border-[#1e1e1e] focus:border-brand-mint/40 outline-none"
+                  placeholder="Uso (ej: titulos, body text)"
+                />
+                {fonts.length > 1 && (
+                  <button onClick={() => removeFont(i)} className="text-text-muted hover:text-red-400 shrink-0">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Border radius + spacing */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-text-muted block mb-1">Border radius</label>
+            <input
+              value={borderRadius}
+              onChange={(e) => setBorderRadius(e.target.value)}
+              className={inputCls}
+              placeholder="ej: rounded-xl, 12px"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-text-muted block mb-1">Espaciado</label>
+            <input
+              value={spacing}
+              onChange={(e) => setSpacing(e.target.value)}
+              className={inputCls}
+              placeholder="ej: compacto, generoso"
+            />
+          </div>
+        </div>
+
+        {/* Extra notes */}
+        <div>
+          <label className="text-xs text-text-muted block mb-1">Notas adicionales</label>
+          <textarea
+            value={extraNotes}
+            onChange={(e) => setExtraNotes(e.target.value)}
+            className={`${inputCls} resize-none h-16`}
+            placeholder="ej: estilo minimalista, dark mode, bordes suaves..."
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-2 pt-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-text-muted hover:text-text-primary transition-colors">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!name.trim() || saving}
+            className="px-4 py-2 text-sm bg-brand-mint/15 text-brand-mint rounded-lg hover:bg-brand-mint/25 transition-colors disabled:opacity-30"
+          >
+            {saving ? "Guardando..." : "Guardar Preset"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main Tab ──────────────────────────────────────────────── */
 
 export default function OcrGeneratorTab() {
@@ -572,6 +814,49 @@ export default function OcrGeneratorTab() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [viewingComponent, setViewingComponent] = useState<LibraryComponent | null>(null);
 
+  // Preset state
+  const [presets, setPresets] = useState<PresetListItem[]>([]);
+  const [activePreset, setActivePreset] = useState("");
+  const [showPresetEditor, setShowPresetEditor] = useState(false);
+  const [editingPreset, setEditingPreset] = useState<BrandPreset | null>(null);
+
+  // Fetch presets on mount
+  const fetchPresets = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/ocr/presets`);
+      const data = await res.json();
+      setPresets(data.presets || []);
+    } catch (err) {
+      console.error("Presets fetch error:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPresets();
+  }, [fetchPresets]);
+
+  const handleEditPreset = async (name: string) => {
+    try {
+      const res = await fetch(`${API}/api/ocr/presets/${name}`);
+      const data = await res.json();
+      setEditingPreset(data.preset || null);
+      setShowPresetEditor(true);
+    } catch (err) {
+      console.error("Load preset error:", err);
+    }
+  };
+
+  const handleDeletePreset = async (name: string) => {
+    if (!confirm(`Eliminar preset "${name}"?`)) return;
+    try {
+      await fetch(`${API}/api/ocr/presets/${name}`, { method: "DELETE" });
+      if (activePreset === name) setActivePreset("");
+      fetchPresets();
+    } catch (err) {
+      console.error("Delete preset error:", err);
+    }
+  };
+
   const handleImageSelected = useCallback((base64: string, mimeType: string) => {
     setImageBase64(base64);
     setImageMime(mimeType);
@@ -591,6 +876,7 @@ export default function OcrGeneratorTab() {
           image_base64: imageBase64,
           mime_type: imageMime,
           description,
+          preset_name: activePreset,
         }),
       });
       const data = await res.json();
@@ -614,6 +900,7 @@ export default function OcrGeneratorTab() {
           code: generatedCode,
           correction,
           history: chatHistory,
+          preset_name: activePreset,
         }),
       });
       const data = await res.json();
@@ -715,9 +1002,56 @@ export default function OcrGeneratorTab() {
         </div>
       </div>
 
+      {/* ── Preset Bar ────────────────────────────────── */}
+      {view === "generator" && (
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-xs text-text-muted shrink-0">Preset de marca:</span>
+          <select
+            value={activePreset}
+            onChange={(e) => setActivePreset(e.target.value)}
+            className="bg-[#151515] text-sm text-text-primary px-3 py-1.5 rounded-lg border border-[#1e1e1e] focus:border-brand-mint/40 outline-none cursor-pointer min-w-[160px]"
+          >
+            <option value="">Sin preset</option>
+            {presets.map((p) => (
+              <option key={p.name} value={p.name}>
+                {p.name}{p.project ? ` — ${p.project}` : ""}
+              </option>
+            ))}
+          </select>
+          {activePreset && (
+            <>
+              <button
+                onClick={() => handleEditPreset(activePreset)}
+                className="text-xs px-2 py-1 bg-[#1e1e1e] text-text-muted hover:text-brand-mint rounded transition-colors"
+              >
+                Editar
+              </button>
+              <button
+                onClick={() => handleDeletePreset(activePreset)}
+                className="text-xs px-2 py-1 bg-[#1e1e1e] text-text-muted hover:text-red-400 rounded transition-colors"
+              >
+                Eliminar
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => { setEditingPreset(null); setShowPresetEditor(true); }}
+            className="text-xs px-3 py-1.5 bg-brand-mint/10 text-brand-mint rounded-lg hover:bg-brand-mint/20 transition-colors"
+          >
+            + Nuevo Preset
+          </button>
+          {activePreset && (
+            <div className="flex items-center gap-1.5 ml-auto">
+              <div className="w-2 h-2 rounded-full bg-brand-mint" />
+              <span className="text-[10px] text-brand-mint">Activo</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Generator View ─────────────────────────────── */}
       {view === "generator" && (
-        <div className="flex gap-4" style={{ height: "calc(100vh - 180px)" }}>
+        <div className="flex gap-4" style={{ height: "calc(100vh - 220px)" }}>
           {/* Left: Upload + Chat */}
           <div className="w-[380px] shrink-0 flex flex-col gap-3">
             {/* Image upload */}
@@ -884,6 +1218,16 @@ export default function OcrGeneratorTab() {
           component={viewingComponent}
           onClose={() => setViewingComponent(null)}
           onLoad={handleLoadFromLibrary}
+        />
+      )}
+      {showPresetEditor && (
+        <PresetEditorModal
+          existing={editingPreset}
+          onClose={() => { setShowPresetEditor(false); setEditingPreset(null); }}
+          onSaved={() => {
+            fetchPresets();
+            if (editingPreset) setActivePreset(editingPreset.name);
+          }}
         />
       )}
     </div>

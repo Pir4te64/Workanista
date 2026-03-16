@@ -12,6 +12,8 @@ from utils.logger import logger
 
 COMPONENTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "components-library")
 INDEX_FILE = os.path.join(COMPONENTS_DIR, "index.json")
+PRESETS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "brand-presets")
+PRESETS_INDEX = os.path.join(PRESETS_DIR, "index.json")
 
 SYSTEM_PROMPT = """You are an expert React + Tailwind CSS developer. Your job is to analyze UI design images and generate production-ready React functional components.
 
@@ -26,7 +28,50 @@ Rules:
 - End with export default ComponentName;
 - If the design has icons, use simple SVG inline or describe them with Tailwind
 - Make the component responsive when possible
-- Use semantic HTML elements (nav, header, section, article, etc.)"""
+- Use semantic HTML elements (nav, header, section, article, etc.)
+{brand_guidelines}"""
+
+
+def _build_brand_guidelines(preset: dict) -> str:
+    """Build brand guidelines text from a preset to inject into prompts."""
+    if not preset:
+        return ""
+
+    lines = ["\n\nBRAND GUIDELINES — You MUST follow these strictly:"]
+
+    if preset.get("colors"):
+        lines.append("\nColors:")
+        for c in preset["colors"]:
+            name = c.get("name", "")
+            value = c.get("value", "")
+            usage = c.get("usage", "")
+            line = f"  - {name}: {value}"
+            if usage:
+                line += f" (use for: {usage})"
+            lines.append(line)
+        lines.append("  Use these exact colors via Tailwind arbitrary values like bg-[#hex], text-[#hex], border-[#hex].")
+
+    if preset.get("fonts"):
+        lines.append("\nTypography:")
+        for f in preset["fonts"]:
+            name = f.get("name", "")
+            usage = f.get("usage", "")
+            line = f"  - {name}"
+            if usage:
+                line += f" → {usage}"
+            lines.append(line)
+        lines.append("  Apply fonts via font-family in Tailwind arbitrary: font-['FontName'] or use standard Tailwind font classes if they match.")
+
+    if preset.get("borderRadius"):
+        lines.append(f"\nBorder radius: {preset['borderRadius']}")
+
+    if preset.get("spacing"):
+        lines.append(f"\nSpacing notes: {preset['spacing']}")
+
+    if preset.get("extraNotes"):
+        lines.append(f"\nAdditional brand notes: {preset['extraNotes']}")
+
+    return "\n".join(lines)
 
 REFINEMENT_PROMPT = """You are an expert React + Tailwind CSS developer. The user wants to refine an existing React component.
 
@@ -49,7 +94,7 @@ class OcrService:
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.model = os.getenv("MODEL_NAME", "gpt-4o")
 
-    def generate_component(self, image_base64: str, mime_type: str, description: str = "") -> str:
+    def generate_component(self, image_base64: str, mime_type: str, description: str = "", preset: dict = None) -> str:
         """Generate a React component from an image using GPT-4o vision."""
         try:
             user_content = []
@@ -73,10 +118,14 @@ class OcrService:
                 "text": text_prompt
             })
 
+            # Build system prompt with brand guidelines
+            brand = _build_brand_guidelines(preset)
+            system = SYSTEM_PROMPT.replace("{brand_guidelines}", brand)
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": system},
                     {"role": "user", "content": user_content}
                 ],
                 max_tokens=4096,
@@ -92,11 +141,15 @@ class OcrService:
             logger.error(f"Error generating component: {e}")
             raise
 
-    def refine_component(self, code: str, correction: str, history: list = None) -> str:
+    def refine_component(self, code: str, correction: str, history: list = None, preset: dict = None) -> str:
         """Refine an existing component based on user feedback."""
         try:
+            brand = _build_brand_guidelines(preset)
+            refinement_sys = REFINEMENT_PROMPT.replace("{code}", code)
+            if brand:
+                refinement_sys += "\n" + brand
             messages = [
-                {"role": "system", "content": REFINEMENT_PROMPT.replace("{code}", code)}
+                {"role": "system", "content": refinement_sys}
             ]
 
             # Add conversation history if provided
@@ -201,6 +254,66 @@ class OcrService:
     def _save_index(self, index: list):
         os.makedirs(COMPONENTS_DIR, exist_ok=True)
         with open(INDEX_FILE, "w") as f:
+            json.dump(index, f, indent=2)
+
+    # ─── Presets ──────────────────────────────────────────────
+
+    def save_preset(self, name: str, preset_data: dict) -> dict:
+        """Save a brand preset."""
+        os.makedirs(PRESETS_DIR, exist_ok=True)
+        index = self._load_presets_index()
+
+        file_path = os.path.join(PRESETS_DIR, f"{name}.json")
+        entry = {
+            "name": name,
+            "created_at": datetime.now().isoformat(),
+            **preset_data
+        }
+        with open(file_path, "w") as f:
+            json.dump(entry, f, indent=2)
+
+        # Update index
+        index = [p for p in index if p["name"] != name]
+        index.append({
+            "name": name,
+            "project": preset_data.get("project", ""),
+            "created_at": entry["created_at"]
+        })
+        self._save_presets_index(index)
+        logger.info(f"Preset '{name}' saved")
+        return entry
+
+    def list_presets(self) -> list:
+        return self._load_presets_index()
+
+    def get_preset(self, name: str) -> dict:
+        file_path = os.path.join(PRESETS_DIR, f"{name}.json")
+        if not os.path.exists(file_path):
+            return None
+        with open(file_path, "r") as f:
+            return json.load(f)
+
+    def delete_preset(self, name: str) -> bool:
+        index = self._load_presets_index()
+        new_index = [p for p in index if p["name"] != name]
+        if len(new_index) == len(index):
+            return False
+        file_path = os.path.join(PRESETS_DIR, f"{name}.json")
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        self._save_presets_index(new_index)
+        logger.info(f"Preset '{name}' deleted")
+        return True
+
+    def _load_presets_index(self) -> list:
+        if os.path.exists(PRESETS_INDEX):
+            with open(PRESETS_INDEX, "r") as f:
+                return json.load(f)
+        return []
+
+    def _save_presets_index(self, index: list):
+        os.makedirs(PRESETS_DIR, exist_ok=True)
+        with open(PRESETS_INDEX, "w") as f:
             json.dump(index, f, indent=2)
 
     def _clean_code(self, code: str) -> str:

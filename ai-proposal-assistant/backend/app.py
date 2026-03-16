@@ -85,12 +85,14 @@ class OcrGenerateRequest(BaseModel):
     image_base64: str
     mime_type: str = "image/png"
     description: str = ""
+    preset_name: str = ""
 
 
 class OcrRefineRequest(BaseModel):
     code: str
     correction: str
     history: list = []
+    preset_name: str = ""
 
 
 class OcrSaveRequest(BaseModel):
@@ -98,6 +100,16 @@ class OcrSaveRequest(BaseModel):
     code: str
     tags: list = []
     description: str = ""
+
+
+class PresetSaveRequest(BaseModel):
+    name: str
+    project: str = ""
+    colors: list = []
+    fonts: list = []
+    borderRadius: str = ""
+    spacing: str = ""
+    extraNotes: str = ""
 
 
 class ColdDuckMessageRequest(BaseModel):
@@ -1187,10 +1199,14 @@ async def scrum_list_active():
 @app.post("/api/ocr/generate")
 async def ocr_generate(request: OcrGenerateRequest):
     try:
+        preset = None
+        if request.preset_name:
+            preset = ocr_svc.get_preset(request.preset_name)
         code = ocr_svc.generate_component(
             image_base64=request.image_base64,
             mime_type=request.mime_type,
-            description=request.description
+            description=request.description,
+            preset=preset
         )
         return {"code": code}
     except Exception as e:
@@ -1201,10 +1217,14 @@ async def ocr_generate(request: OcrGenerateRequest):
 @app.post("/api/ocr/refine")
 async def ocr_refine(request: OcrRefineRequest):
     try:
+        preset = None
+        if request.preset_name:
+            preset = ocr_svc.get_preset(request.preset_name)
         code = ocr_svc.refine_component(
             code=request.code,
             correction=request.correction,
-            history=request.history
+            history=request.history,
+            preset=preset
         )
         return {"code": code}
     except Exception as e:
@@ -1262,4 +1282,64 @@ async def ocr_delete_component(name: str):
         raise
     except Exception as e:
         logger.error(f"OCR delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Brand Presets ───────────────────────────────────────────────────────
+
+
+@app.post("/api/ocr/presets")
+async def preset_save(request: PresetSaveRequest):
+    try:
+        entry = ocr_svc.save_preset(
+            name=request.name,
+            preset_data={
+                "project": request.project,
+                "colors": request.colors,
+                "fonts": request.fonts,
+                "borderRadius": request.borderRadius,
+                "spacing": request.spacing,
+                "extraNotes": request.extraNotes,
+            }
+        )
+        return {"preset": entry}
+    except Exception as e:
+        logger.error(f"Preset save error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/ocr/presets")
+async def preset_list():
+    try:
+        return {"presets": ocr_svc.list_presets()}
+    except Exception as e:
+        logger.error(f"Preset list error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/ocr/presets/{name}")
+async def preset_get(name: str):
+    try:
+        preset = ocr_svc.get_preset(name)
+        if not preset:
+            raise HTTPException(status_code=404, detail="Preset not found")
+        return {"preset": preset}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Preset get error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/ocr/presets/{name}")
+async def preset_delete(name: str):
+    try:
+        deleted = ocr_svc.delete_preset(name)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Preset not found")
+        return {"deleted": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Preset delete error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
