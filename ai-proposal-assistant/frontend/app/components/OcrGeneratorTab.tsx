@@ -118,8 +118,54 @@ function ImageUploader({
   );
 }
 
+function buildPreviewHtml(code: string): string {
+  // Extract the component name from "const XYZ = " or "export default XYZ"
+  const nameMatch = code.match(/const\s+(\w+)\s*=/);
+  const componentName = nameMatch ? nameMatch[1] : "Component";
+
+  // Convert TSX to browser-safe JSX: strip type annotations loosely
+  let jsCode = code
+    .replace(/:\s*React\.FC(?:<[^>]*>)?/g, "")
+    .replace(/:\s*React\.(?:MouseEvent|ChangeEvent|FormEvent)(?:<[^>]*>)?/g, "")
+    .replace(/:\s*(?:string|number|boolean|any|void|null|undefined)(?:\[\])?/g, "")
+    .replace(/<(\w+)>/g, "")  // strip generic type params like <T>
+    .replace(/as\s+\w+/g, "")
+    .replace(/interface\s+\w+\s*\{[^}]*\}/g, "")
+    .replace(/type\s+\w+\s*=\s*[^;]+;/g, "")
+    .replace(/import\s+.*?from\s+['"][^'"]+['"];?\n?/g, "")
+    .replace(/export\s+default\s+\w+;?\s*$/m, "");
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
+  <style>body{margin:0;padding:16px;background:#fff;font-family:system-ui,sans-serif}</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+    try {
+      ${jsCode}
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(React.createElement(${componentName}));
+    } catch(e) {
+      document.getElementById('root').innerHTML = '<div style="color:#ef4444;font-size:13px;font-family:monospace;padding:16px"><b>Preview error:</b><br/>' + e.message + '</div>';
+    }
+  <\/script>
+</body>
+</html>`;
+}
+
 function CodePanel({ code, loading }: { code: string; loading: boolean }) {
   const [copied, setCopied] = useState(false);
+  const [activePanel, setActivePanel] = useState<"code" | "preview">("code");
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const handleCopy = () => {
     const exportCode = `import React from 'react';\n\n${code}\n`;
@@ -127,6 +173,14 @@ function CodePanel({ code, loading }: { code: string; loading: boolean }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Update iframe preview when code changes
+  useEffect(() => {
+    if (activePanel === "preview" && code && iframeRef.current) {
+      const html = buildPreviewHtml(code);
+      iframeRef.current.srcdoc = html;
+    }
+  }, [activePanel, code]);
 
   if (!code && !loading) {
     return (
@@ -140,16 +194,41 @@ function CodePanel({ code, loading }: { code: string; loading: boolean }) {
     <div className="relative h-full flex flex-col">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[#1e1e1e]">
-        <span className="text-xs text-text-muted font-mono">component.tsx</span>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setActivePanel("code")}
+            className={`text-xs px-2.5 py-1 rounded transition-colors ${
+              activePanel === "code"
+                ? "bg-brand-mint/15 text-brand-mint"
+                : "text-text-muted hover:text-text-primary"
+            }`}
+          >
+            Codigo
+          </button>
+          <button
+            onClick={() => setActivePanel("preview")}
+            className={`text-xs px-2.5 py-1 rounded transition-colors ${
+              activePanel === "preview"
+                ? "bg-brand-mint/15 text-brand-mint"
+                : "text-text-muted hover:text-text-primary"
+            }`}
+          >
+            Preview
+          </button>
+        </div>
         <button
           onClick={handleCopy}
           disabled={!code}
-          className="text-xs px-2 py-1 rounded bg-[#1e1e1e] text-text-muted hover:text-brand-mint transition-colors disabled:opacity-30"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-[#1e1e1e] text-text-muted hover:text-brand-mint hover:bg-brand-mint/10 transition-colors disabled:opacity-30"
         >
-          {copied ? "Copiado!" : "Copiar"}
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+          </svg>
+          {copied ? "Copiado!" : "Copiar import-ready"}
         </button>
       </div>
-      {/* Code */}
+
+      {/* Content */}
       <div className="flex-1 overflow-auto">
         {loading && !code ? (
           <div className="flex items-center justify-center h-full">
@@ -161,7 +240,7 @@ function CodePanel({ code, loading }: { code: string; loading: boolean }) {
               <span className="text-sm">Generando componente...</span>
             </div>
           </div>
-        ) : (
+        ) : activePanel === "code" ? (
           <SyntaxHighlighter
             language="tsx"
             style={oneDark}
@@ -176,6 +255,13 @@ function CodePanel({ code, loading }: { code: string; loading: boolean }) {
           >
             {code}
           </SyntaxHighlighter>
+        ) : (
+          <iframe
+            ref={iframeRef}
+            title="Component Preview"
+            sandbox="allow-scripts"
+            className="w-full h-full border-0 bg-white rounded-b-lg"
+          />
         )}
       </div>
     </div>
