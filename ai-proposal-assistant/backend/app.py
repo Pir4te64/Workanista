@@ -7,7 +7,7 @@ from services.proposal_generator import ProposalGenerator
 from services.embedding_service import EmbeddingService
 from services.memory_service import MemoryService
 from services.coldduck.coldduck_service import ColdDuckService
-from services.google_calendar_service import GoogleCalendarService
+from services.agenda_service import AgendaService
 from services.planning_service import PlanningService
 from services.scrum_service import ScrumService
 from services.diagram_service import DiagramService
@@ -36,7 +36,7 @@ memory_service = MemoryService(db, vector_store, embedding_service)
 analyzer = ProposalAnalyzer()
 generator = ProposalGenerator()
 coldduck = ColdDuckService(db)
-google_cal = GoogleCalendarService(db)
+agenda_svc = AgendaService(db)
 planning_svc = PlanningService(db)
 scrum_svc = ScrumService(db)
 diagram_svc = DiagramService(db)
@@ -753,116 +753,151 @@ async def delete_budget(budget_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== Google Calendar ====================
+# ==================== Seller Links (Vendedores) ====================
 
 
-class CalendarEventRequest(BaseModel):
-    email: str
-    summary: str
-    start: str  # ISO datetime
-    end: str  # ISO datetime
-    attendees: list[str] = []
-    description: str = ""
-    location: str = ""
-    add_meet: bool = False
+class SellerLinkRequest(BaseModel):
+    url: str
+    title: str = ""
+    assigned_to: str = ""
 
 
-@app.get("/api/google/status")
-async def google_status(email: str):
+class SellerLinkUpdate(BaseModel):
+    done: Optional[bool] = None
+    notes: Optional[str] = None
+    assigned_to: Optional[str] = None
+    title: Optional[str] = None
+
+
+@app.get("/api/sellers/links")
+async def seller_links_list():
     try:
-        connected = google_cal.is_connected(email)
-        return {"connected": connected}
+        res = db.client.table("seller_links").select("*").order("created_at", desc=True).execute()
+        return {"links": res.data or []}
     except Exception as e:
-        logger.error(f"Google status error: {e}")
-        return {"connected": False}
-
-
-@app.get("/api/google/auth-url")
-async def google_auth_url(email: str):
-    try:
-        url = google_cal.get_auth_url(email)
-        return {"url": url}
-    except Exception as e:
-        logger.error(f"Google auth URL error: {e}")
+        logger.error(f"Seller links list error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/google/callback")
-async def google_callback(code: str, state: str = ""):
-    """OAuth callback - exchanges code for tokens and redirects to frontend."""
-    from fastapi.responses import RedirectResponse
+@app.post("/api/sellers/links")
+async def seller_links_create(request: SellerLinkRequest):
     try:
-        google_cal.handle_callback(code, state)
-        frontend_url = cors_origins[0] if cors_origins else "http://localhost:3004"
-        return RedirectResponse(url=f"{frontend_url}?tab=calendar&google=connected")
+        res = db.client.table("seller_links").insert({
+            "url": request.url,
+            "title": request.title,
+            "assigned_to": request.assigned_to,
+        }).execute()
+        return {"link": res.data[0] if res.data else None}
     except Exception as e:
-        logger.error(f"Google callback error: {e}")
-        frontend_url = cors_origins[0] if cors_origins else "http://localhost:3004"
-        return RedirectResponse(url=f"{frontend_url}?tab=calendar&google=error")
-
-
-@app.get("/api/google/events")
-async def google_events(email: str, time_min: str, time_max: str):
-    try:
-        events = google_cal.list_events(email, time_min, time_max)
-        return {"events": events}
-    except Exception as e:
-        logger.error(f"Google events error: {e}")
+        logger.error(f"Seller links create error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/google/events")
-async def google_create_event(request: CalendarEventRequest):
+@app.patch("/api/sellers/links/{link_id}")
+async def seller_links_update(link_id: str, request: SellerLinkUpdate):
     try:
-        event_data = {
-            "summary": request.summary,
-            "start": {
-                "dateTime": request.start,
-                "timeZone": "America/Argentina/Buenos_Aires",
-            },
-            "end": {
-                "dateTime": request.end,
-                "timeZone": "America/Argentina/Buenos_Aires",
-            },
-        }
-        if request.attendees:
-            event_data["attendees"] = [{"email": a} for a in request.attendees]
-        if request.description:
-            event_data["description"] = request.description
-        if request.location:
-            event_data["location"] = request.location
-        if request.add_meet:
-            event_data["conferenceData"] = {
-                "createRequest": {
-                    "requestId": f"meet-{request.start}",
-                    "conferenceSolutionKey": {"type": "hangoutsMeet"},
-                }
-            }
-
-        event = google_cal.create_event(request.email, event_data, conference=request.add_meet)
-        return {"event": event}
+        updates = {k: v for k, v in request.model_dump().items() if v is not None}
+        if not updates:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        res = db.client.table("seller_links").update(updates).eq("id", link_id).execute()
+        return {"link": res.data[0] if res.data else None}
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Google create event error: {e}")
+        logger.error(f"Seller links update error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/api/google/events/{event_id}")
-async def google_delete_event(event_id: str, email: str):
+@app.delete("/api/sellers/links/{link_id}")
+async def seller_links_delete(link_id: str):
     try:
-        google_cal.delete_event(email, event_id)
+        db.client.table("seller_links").delete().eq("id", link_id).execute()
         return {"status": "ok"}
     except Exception as e:
-        logger.error(f"Google delete event error: {e}")
+        logger.error(f"Seller links delete error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/google/availability")
-async def google_availability(email: str, time_min: str, time_max: str):
+# ==================== Agenda ====================
+
+
+class SlotRequest(BaseModel):
+    day_of_week: int  # 0=Lun .. 6=Dom
+    start_time: str   # "09:00"
+    end_time: str     # "10:00"
+
+
+class BookingRequest(BaseModel):
+    date: str         # "2026-03-20"
+    start_time: str
+    end_time: str
+    title: str
+    booked_by: str
+    meet_link: str = ""
+    description: str = ""
+
+
+@app.get("/api/agenda/slots")
+async def agenda_list_slots():
     try:
-        availability = google_cal.get_availability(email, time_min, time_max)
-        return {"busy": availability}
+        slots = agenda_svc.list_slots()
+        return {"slots": slots}
     except Exception as e:
-        logger.error(f"Google availability error: {e}")
+        logger.error(f"Agenda list slots error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/agenda/slots")
+async def agenda_create_slot(request: SlotRequest):
+    try:
+        slot = agenda_svc.create_slot(request.day_of_week, request.start_time, request.end_time)
+        return {"slot": slot}
+    except Exception as e:
+        logger.error(f"Agenda create slot error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/agenda/slots/{slot_id}")
+async def agenda_delete_slot(slot_id: str):
+    try:
+        agenda_svc.delete_slot(slot_id)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Agenda delete slot error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/agenda/bookings")
+async def agenda_list_bookings(date_from: str, date_to: str):
+    try:
+        bookings = agenda_svc.list_bookings(date_from, date_to)
+        return {"bookings": bookings}
+    except Exception as e:
+        logger.error(f"Agenda list bookings error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/agenda/bookings")
+async def agenda_create_booking(request: BookingRequest):
+    try:
+        booking = agenda_svc.create_booking(
+            request.date, request.start_time, request.end_time,
+            request.title, request.booked_by,
+            request.meet_link, request.description,
+        )
+        return {"booking": booking}
+    except Exception as e:
+        logger.error(f"Agenda create booking error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/agenda/bookings/{booking_id}")
+async def agenda_delete_booking(booking_id: str):
+    try:
+        agenda_svc.delete_booking(booking_id)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Agenda delete booking error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

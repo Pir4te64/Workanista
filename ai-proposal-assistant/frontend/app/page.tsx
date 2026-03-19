@@ -158,7 +158,7 @@ const NAV_ITEMS = [
   { key: "linkedin", label: "ColdDuck", icon: "send" },
   { key: "budgets", label: "Presupuestos", icon: "document" },
   { key: "invoice", label: "Invoice", icon: "invoice" },
-  { key: "calendar", label: "Calendario", icon: "calendar" },
+  { key: "calendar", label: "Agenda", icon: "calendar" },
   { key: "scrum", label: "Planificacion", icon: "scrum" },
   { key: "tracking", label: "Seguimiento", icon: "tracking" },
   { key: "design", label: "Diagramas", icon: "design" },

@@ -5,6 +5,7 @@ import ProposalInput from "./ProposalInput";
 import ProposalQueue from "./ProposalQueue";
 import ProposalHistory from "./ProposalHistory";
 import ProposalAnalytics from "./ProposalAnalytics";
+import SellersPanel from "./SellersPanel";
 import type { QueueItem } from "../page";
 
 interface Props {
@@ -18,12 +19,13 @@ interface Props {
 }
 
 export default function WorkanaTab({ queue, onAdd, onRemove, onClearCompleted, onUpdateItem, onReorder, inputRef }: Props) {
-  const [subTab, setSubTab] = useState<"new" | "history" | "analytics">("new");
+  const [subTab, setSubTab] = useState<"new" | "history" | "analytics" | "sellers">("new");
 
   const tabs = [
     { key: "new" as const, label: "Nueva Propuesta" },
     { key: "history" as const, label: "Historial" },
     { key: "analytics" as const, label: "Analytics" },
+    { key: "sellers" as const, label: "Vendedores" },
   ];
 
   return (
@@ -68,6 +70,8 @@ export default function WorkanaTab({ queue, onAdd, onRemove, onClearCompleted, o
       {subTab === "history" && <ProposalHistory />}
 
       {subTab === "analytics" && <ProposalAnalytics />}
+
+      {subTab === "sellers" && <SellersPanel />}
     </div>
   );
 }
