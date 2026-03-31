@@ -310,6 +310,21 @@ export default function ColdDuckTab() {
               </button>
             ))}
           </div>
+          {historyActive > 0 && filter !== "archived" && (
+            <button
+              onClick={async () => {
+                const active = history.filter((h) => h.result !== "done");
+                for (const h of active) {
+                  await markOutreachResult(h.id, "done");
+                }
+                setHistory((prev) => prev.map((h) => h.result !== "done" ? { ...h, result: "done" } : h));
+                addToast("success", `${active.length} leads archivados`);
+              }}
+              className="btn-secondary px-4 py-1.5 text-xs font-medium"
+            >
+              Limpiar lista
+            </button>
+          )}
           <button
             onClick={() => setShowForm(!showForm)}
             className="btn-primary px-4 py-1.5 text-xs font-medium"
@@ -504,26 +519,34 @@ export default function ColdDuckTab() {
           {filteredHistory.map((item) => {
             const profile = item.profile;
             const isExpanded = expandedId === item.id;
-            const currentResult = RESULT_OPTIONS.find((o) => o.value === item.result) || RESULT_OPTIONS[0];
 
             return (
               <div
                 key={item.id}
-                className="glass-card-hover rounded-lg transition-all"
+                className={`glass-card-hover rounded-lg transition-all ${item.result === "done" ? "opacity-60" : ""}`}
                 style={{ border: "1px solid rgba(255,255,255,0.04)" }}
               >
                 {/* Main row */}
                 <div className="flex items-center gap-3 p-3">
-                  {/* Result badge */}
-                  <span
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ background: currentResult.color }}
-                  />
+                  {/* Checkbox done */}
+                  <button
+                    onClick={() => handleMarkResult(item.id, item.result === "done" ? "pending" : "done")}
+                    className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all ${
+                      item.result === "done" ? "bg-brand-mint" : "bg-surface-dark"
+                    }`}
+                    style={{ border: item.result === "done" ? "none" : "1px solid rgba(255,255,255,0.1)" }}
+                  >
+                    {item.result === "done" && (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0F0F1E" strokeWidth="3">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
 
                   {/* Profile info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-text-primary truncate">
+                      <span className={`text-xs font-medium truncate ${item.result === "done" ? "text-text-muted line-through" : "text-text-primary"}`}>
                         {profile?.full_name || "Perfil"}
                       </span>
                       {profile?.industry && (
