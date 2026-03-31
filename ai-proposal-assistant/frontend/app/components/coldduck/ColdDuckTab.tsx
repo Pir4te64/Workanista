@@ -8,6 +8,7 @@ import {
   processOutreach,
   getOutreach,
   markOutreachResult,
+  deleteOutreach,
   getMessages,
   addMessage,
   deleteMessage,
@@ -16,7 +17,7 @@ import {
   type OutreachMessage,
 } from "@/lib/coldduck-api";
 
-type Filter = "all" | "pending" | "processing" | "done";
+type Filter = "all" | "pending" | "done" | "archived";
 
 const RESULT_OPTIONS = [
   { value: "pending", label: "Pendiente", color: "#6B6B85", bg: "rgba(255,255,255,0.06)" },
@@ -24,6 +25,7 @@ const RESULT_OPTIONS = [
   { value: "connected", label: "Conectado", color: "#00F5A0", bg: "rgba(0,245,160,0.1)" },
   { value: "meeting", label: "Reunion", color: "#60a5fa", bg: "rgba(59,130,246,0.1)" },
   { value: "ignored", label: "Ignorado", color: "#f87171", bg: "rgba(239,68,68,0.1)" },
+  { value: "done", label: "Hecho", color: "#a78bfa", bg: "rgba(167,139,250,0.1)" },
 ] as const;
 
 interface QueueItem {
@@ -179,7 +181,18 @@ export default function ColdDuckTab() {
   };
 
   // Actions on history items
-  const handleMarkResult = async (id: string, result: "replied" | "ignored" | "connected" | "meeting" | "pending") => {
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteOutreach(id);
+      setHistory((prev) => prev.filter((h) => h.id !== id));
+      if (expandedId === id) setExpandedId(null);
+      addToast("success", "Lead eliminado");
+    } catch {
+      addToast("error", "Error eliminando lead");
+    }
+  };
+
+  const handleMarkResult = async (id: string, result: "replied" | "ignored" | "connected" | "meeting" | "pending" | "done") => {
     try {
       await markOutreachResult(id, result);
       setHistory((prev) => prev.map((h) => h.id === id ? { ...h, result } : h));
@@ -234,14 +247,15 @@ export default function ColdDuckTab() {
   // Counts
   const queuePending = queue.filter((i) => i.status === "pending" || i.status === "processing").length;
   const queueErrors = queue.filter((i) => i.status === "error").length;
-  const historyPending = history.filter((h) => h.result === "pending").length;
-  const historyDone = history.filter((h) => h.result !== "pending").length;
+  const historyActive = history.filter((h) => h.result !== "done").length;
+  const historyArchived = history.filter((h) => h.result === "done").length;
 
   // Filter history
   const filteredHistory = history.filter((h) => {
     if (filter === "pending") return h.result === "pending";
-    if (filter === "done") return h.result !== "pending";
-    return true;
+    if (filter === "done") return h.result !== "pending" && h.result !== "done";
+    if (filter === "archived") return h.result === "done";
+    return h.result !== "done"; // "all" hides archived by default
   });
 
   return (
@@ -270,15 +284,18 @@ export default function ColdDuckTab() {
                 {queueErrors} errores
               </span>
             )}
-            <span className="px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-400">{historyPending} pendientes</span>
-            <span className="px-2 py-1 rounded-md bg-green-500/10 text-green-400">{historyDone} contactados</span>
+            <span className="px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-400">{historyActive} activos</span>
+            {historyArchived > 0 && (
+              <span className="px-2 py-1 rounded-md bg-purple-500/10 text-purple-400">{historyArchived} archivados</span>
+            )}
           </div>
           {/* Filter */}
           <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
             {([
-              { key: "all", label: "Todos" },
+              { key: "all", label: "Activos" },
               { key: "pending", label: "Pendientes" },
               { key: "done", label: "Contactados" },
+              { key: "archived", label: "Archivados" },
             ] as const).map((f) => (
               <button
                 key={f.key}
@@ -555,6 +572,15 @@ export default function ColdDuckTab() {
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                       className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}>
                       <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="text-text-muted hover:text-red-400 p-1 transition-colors flex-shrink-0"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                     </svg>
                   </button>
                 </div>

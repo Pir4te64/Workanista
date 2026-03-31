@@ -374,7 +374,7 @@ async def coldduck_get_outreach():
 
 @app.post("/coldduck/mark-result")
 async def coldduck_mark_result(request: ColdDuckResultRequest):
-    valid = ("replied", "ignored", "connected", "meeting", "pending")
+    valid = ("replied", "ignored", "connected", "meeting", "pending", "done")
     if request.result not in valid:
         raise HTTPException(status_code=400, detail=f"Result must be one of: {', '.join(valid)}")
     try:
@@ -382,6 +382,16 @@ async def coldduck_mark_result(request: ColdDuckResultRequest):
         return {"status": "ok", "outreach_id": request.outreach_id, "result": request.result}
     except Exception as e:
         logger.error(f"ColdDuck mark error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/coldduck/outreach/{outreach_id}")
+async def coldduck_delete_outreach(outreach_id: str):
+    try:
+        await coldduck.delete_outreach(outreach_id)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"ColdDuck delete error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

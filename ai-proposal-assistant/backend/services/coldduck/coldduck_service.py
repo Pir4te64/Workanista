@@ -126,6 +126,12 @@ class ColdDuckService:
             {"result": result}
         ).eq("id", outreach_id).execute()
 
+    async def delete_outreach(self, outreach_id: str) -> None:
+        """Delete an outreach record and its messages."""
+        logger.info(f"Deleting outreach {outreach_id}")
+        self.db.client.table("coldduck_messages").delete().eq("outreach_id", outreach_id).execute()
+        self.db.client.table("coldduck_outreach").delete().eq("id", outreach_id).execute()
+
     def _save_outreach(
         self,
         linkedin_url: str,

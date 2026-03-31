@@ -113,7 +113,7 @@ export async function getOutreach(): Promise<OutreachRecord[]> {
 
 export async function markOutreachResult(
   outreachId: string,
-  result: "replied" | "ignored" | "connected" | "meeting" | "pending"
+  result: "replied" | "ignored" | "connected" | "meeting" | "pending" | "done"
 ): Promise<void> {
   const res = await fetch(`${API_BASE}/coldduck/mark-result`, {
     method: "POST",
@@ -134,6 +134,13 @@ export async function checkVideoStatus(
   });
   if (!res.ok) throw new Error("Error checking video status");
   return res.json();
+}
+
+export async function deleteOutreach(outreachId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/coldduck/outreach/${outreachId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Error al eliminar outreach");
 }
 
 export async function getMessages(outreachId: string): Promise<OutreachMessage[]> {
